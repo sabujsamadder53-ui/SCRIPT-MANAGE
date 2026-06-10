@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Video Script Pipeline</title>
+    <title>Enterprise Video Script Pipeline & Production Hub</title>
     <style>
         :root {
-            --bg-color: #f4f6f9;
+            --bg-color: #f8fafc;
             --primary-dark: #0f172a;
-            --accent-blue: #2563eb;
+            --accent-blue: #3b82f6;
             --accent-green: #10b981;
             --accent-orange: #f59e0b;
             --accent-red: #ef4444;
             --text-dark: #1e293b;
             --card-bg: #ffffff;
+            --border-glow: #e2e8f0;
+            --transition-smooth: all 0.2s ease-in-out;
         }
 
         * {
@@ -26,61 +28,110 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-dark);
+            overflow-x: hidden;
         }
 
-        /* Centered Top Nav Dashboard Header */
+        /* Top Nav Dashboard Header Layout */
         header {
-            background-color: var(--primary-dark);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             color: white;
-            padding: 25px 40px;
+            padding: 30px 40px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             gap: 15px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
             text-align: center;
             position: relative;
         }
 
         .header-title {
             font-size: 26px;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: -0.5px;
         }
 
-        .manager-btn-top {
+        /* Fixed Right Layout Alignment Area */
+        .header-action-container {
             position: absolute;
             right: 40px;
-            top: 30px;
-            background: rgba(255, 255, 255, 0.1);
+            top: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .header-buttons-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn-header-action {
+            background: rgba(255, 255, 255, 0.08);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 14px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 14px;
-            transition: all 0.2s;
+            font-size: 13px;
+            white-space: nowrap;
+            display: inline-block;
+            width: auto;
+            transition: var(--transition-smooth);
         }
-        .manager-btn-top:hover {
+        .btn-header-action:hover {
             background: rgba(255, 255, 255, 0.2);
         }
+        .btn-header-action.active-mode {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
 
-        /* 3-Level Dynamic Center Counters */
+        /* Fixed Alignment for Back Button Under Global Trash Position on the Right side */
+        .back-btn-space {
+            width: auto;
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 2px;
+            margin-top: 4px;
+        }
+        .btn-micro-back {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 13px;
+            white-space: nowrap;
+            width: auto;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(59,130,246,0.25);
+            transition: var(--transition-smooth);
+        }
+        .btn-micro-back:hover {
+            background: #2563eb;
+        }
+
+        /* Center Counters Display Setup */
         .stats-bar {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             justify-content: center;
             align-items: center;
             flex-wrap: wrap;
         }
 
         .stat-badge {
-            padding: 6px 16px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -90,135 +141,200 @@
         .stat-ready { background-color: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.3); }
         .stat-completed { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
-        /* Navigation Tabs Panel */
+        .video-bar-pending { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .video-bar-ready { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        /* Trash Counters Styling */
+        .trash-bar-archive { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .trash-bar-video { background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+        /* Card Inline Micro Ticker Styling */
+        .card-live-ticker-display {
+            font-size: 14px;
+            font-weight: 800;
+            color: #ef4444;
+            background: #fef2f2;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid #fee2e2;
+            display: inline-block;
+            margin-top: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 0.5px;
+        }
+
+        /* Navigation Process Sub-tabs Link */
         .nav-tabs {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin: 25px 0;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 10px;
+            margin: 20px 0;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+            flex-wrap: wrap;
         }
 
         .tab-link {
             background: none;
             border: none;
-            padding: 8px 24px;
-            font-size: 15px;
-            font-weight: 600;
+            padding: 8px 22px;
+            font-size: 14px;
+            font-weight: 700;
             color: #64748b;
             cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition-smooth);
         }
 
         .tab-link.active {
             color: var(--accent-blue);
-            border-bottom: 2px solid var(--accent-blue);
+            border-bottom: 3px solid var(--accent-blue);
         }
 
-        /* Center Workspace Focus Engine */
-        .workspace, #managerWorkspace {
-            max-width: 850px;
+        .sub-tab-link {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            padding: 6px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: var(--transition-smooth);
+        }
+
+        .sub-tab-link.active {
+            background: var(--accent-blue);
+            color: white;
+            border-color: var(--accent-blue);
+        }
+
+        /* Workspaces Framework Bounds Constraints */
+        .workspace, #managerWorkspace, #videoWorkspace, #trashWorkspace {
+            max-width: 900px;
             margin: 0 auto;
-            padding: 0 20px 50px 20px;
+            padding: 0 20px 40px 20px;
         }
 
-        #managerWorkspace {
+        #managerWorkspace, #videoWorkspace, #trashWorkspace {
             display: none;
         }
 
-        /* Script Form Card Block */
+        /* Entry Insertion Block Panels */
         .creation-panel {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 35px;
-            border: 1px solid #e2e8f0;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            margin-bottom: 25px;
+            border: 1px solid var(--border-glow);
         }
 
         .panel-heading {
             font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
             color: var(--primary-dark);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
-        .field-block { margin-bottom: 15px; }
+        .field-block { margin-bottom: 12px; }
 
         .input-control {
             width: 100%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             outline: none;
             background: #f8fafc;
+            color: var(--text-dark);
         }
+        .input-control:focus { border-color: var(--accent-blue); background: #fff; }
 
-        .input-control:focus {
-            border-color: var(--accent-blue);
-            background: #fff;
-        }
-
-        textarea.input-control { height: 120px; resize: vertical; }
+        textarea.input-control { height: 110px; resize: vertical; }
 
         .action-submit {
-            background-color: var(--primary-dark);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             color: white;
             border: none;
-            padding: 14px 24px;
-            font-size: 15px;
-            font-weight: 600;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 700;
             border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            transition: all 0.2s;
         }
-        .action-submit:hover { background-color: #1e293b; }
+
+        .list-header-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
 
         .list-title {
             font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #475569;
+            font-weight: 800;
+            color: #334155;
         }
 
-        /* Grid Rows Framework Layout */
+        .filter-controls-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filter-control-select {
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            background-color: var(--card-bg);
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        /* Flex Grid Base Rows */
         .scripts-grid {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
         }
 
         .script-row {
             background: var(--card-bg);
             border-radius: 10px;
-            padding: 20px;
+            padding: 16px 20px;
             border: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            transition: var(--transition-smooth);
+        }
+        .script-row:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.02);
         }
 
-        .row-details { flex-grow: 1; max-width: 50%; }
-        .meta-time { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
-        .row-title { font-size: 17px; font-weight: 600; color: var(--primary-dark); margin-bottom: 6px; }
-        .row-snippet { font-size: 14px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .row-buttons { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;}
+        .row-details { flex-grow: 1; max-width: 65%; }
+        .meta-time { font-size: 11px; color: #94a3b8; margin-bottom: 4px; font-weight: 500; }
+        .row-title { font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-bottom: 4px; }
+        .row-snippet { font-size: 13px; color: #627d98; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .row-buttons { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;}
 
         .btn-pro {
-            border: none; padding: 9px 15px; font-size: 13px; font-weight: 600;
-            border-radius: 6px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+            border: none; padding: 6px 12px; font-size: 12px; font-weight: 700;
+            border-radius: 6px; cursor: pointer; transition: var(--transition-smooth); white-space: nowrap;
+            display: inline-block; width: auto;
         }
 
-        .btn-view { background-color: #e2e8f0; color: var(--primary-dark); }
-        .btn-view:hover { background-color: #cbd5e1; }
+        .btn-view { background-color: #f1f5f9; color: #334155; }
+        .btn-view:hover { background-color: #e2e8f0; }
         .btn-ready { background-color: var(--accent-blue); color: white; }
         .btn-ready:hover { background-color: #1d4ed8; }
         .btn-done { background-color: var(--accent-green); color: white; }
@@ -228,12 +344,37 @@
         .btn-restore { background-color: #dcfce7; color: #166534; }
         .btn-restore:hover { background-color: #bbf7d0; }
 
+        /* Editing Control Buttons */
+        .btn-start-edit { background-color: #f59e0b; color: white; }
+        .btn-start-edit:hover { background-color: #d97706; }
+        .btn-edit-done { background-color: #10b981; color: white; }
+        .btn-edit-done:hover { background-color: #059669; }
+
         .btn-card-copy {
-            background-color: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.2);
+            background-color: rgba(16, 185, 129, 0.06); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.12);
         }
         .btn-card-copy:hover { background-color: var(--accent-green); color: white; }
 
-        /* FULL SCREEN OVERLAY STUDIO EDITOR */
+        .custom-render-badge {
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-weight: 800;
+            font-size: 11px;
+            display: inline-block;
+        }
+
+        .empty-status-text {
+            padding: 30px;
+            text-align: center;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 14px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+        }
+
+        /* STUDIO EDITOR COMPONENTS */
         .fullscreen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background-color: #ffffff; z-index: 9999; flex-direction: column; padding: 30px 50px;
@@ -243,51 +384,221 @@
             border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; gap: 20px;
         }
         .title-area-wrapper { display: flex; align-items: center; gap: 15px; flex-grow: 1; }
-        .editor-title-view { font-size: 22px; font-weight: 700; color: var(--primary-dark); border: none; outline: none; width: 60%; }
+        .editor-title-view { font-size: 22px; font-weight: 800; color: var(--primary-dark); border: none; outline: none; width: 60%; }
         .btn-copy-script {
             background-color: rgba(16, 185, 129, 0.1); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.3);
-            padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px;
+            padding: 6px 14px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px;
         }
         .btn-copy-script:hover { background-color: var(--accent-green); color: white; }
         .editor-controls { display: flex; gap: 12px; }
-        .btn-editor { padding: 10px 22px; font-size: 14px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; }
-        .btn-hide { background-color: #64748b; color: white; }
+        .btn-editor { padding: 10px 20px; font-size: 13px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; }
+        .btn-hide { background-color: #475569; color: white; }
         .btn-save-edit { background-color: var(--accent-blue); color: white; display: none; }
         .editor-textarea {
             width: 100%; flex-grow: 1; border: none; outline: none; font-size: 16px; line-height: 1.6; color: #334155; resize: none; font-family: inherit; background: #fff;
         }
 
-        /* CUSTOM GLOBAL POPUP WINDOW DIALOGS */
+        /* MODAL ALERTS INTERACTION VIEW DESIGN */
         .alert-backdrop {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 23, 42, 0.6); z-index: 10000; justify-content: center; align-items: center;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(2px); z-index: 10000; justify-content: center; align-items: center;
         }
         .alert-box {
             background: white; padding: 25px; border-radius: 12px; max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
-        .alert-box h3 { margin-bottom: 10px; color: var(--primary-dark); font-size: 18px; }
-        .alert-box p { font-size: 14px; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
+        .alert-box h3 { margin-bottom: 10px; color: var(--primary-dark); font-size: 18px; font-weight: 800; }
+        .alert-box p { font-size: 13px; color: #64748b; margin-bottom: 20px; line-height: 1.5; }
         .alert-box input, .alert-box select { margin-bottom: 15px; }
         .alert-btns { display: flex; gap: 12px; justify-content: center; }
-        .btn-alert { padding: 10px 20px; font-size: 14px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer; }
-        .btn-cancel-alert { background: #e2e8f0; color: #334155; }
-        .btn-confirm-discard { background: var(--accent-red); color: white; }
+        .btn-alert { padding: 10px 20px; font-size: 13px; font-weight: 700; border-radius: 6px; border: none; cursor: pointer; }
+        .btn-cancel-alert { background: #f1f5f9; color: #475569; }
         .btn-confirm-save { background: var(--accent-blue); color: white; }
 
-        .empty-status-text { text-align: center; color: #94a3b8; padding: 40px; background: white; border-radius: 10px; border: 2px dashed #e2e8f0; }
-
-        /* MANAGER SPECIFIC STYLES */
-        .analytics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
-        .analytics-card { background: var(--card-bg); padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center; }
-        .analytics-card h4 { font-size: 14px; color: #64748b; margin-bottom: 5px; }
-        .analytics-card .number { font-size: 28px; font-weight: 700; color: var(--primary-dark); }
+        /* MANAGER INTERACTIVE OPTIONS CONFIGURATION PANELS */
+        .analytics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
+        .analytics-card { background: var(--card-bg); padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center; cursor: pointer; transition: var(--transition-smooth); }
+        .analytics-card:hover { border-color: var(--accent-blue); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .analytics-card.active-card-filter { border-color: var(--accent-blue); background-color: #f0f6ff; }
+        .analytics-card h4 { font-size: 12px; color: #64748b; margin-bottom: 5px; text-transform: uppercase; }
+        .analytics-card .number { font-size: 24px; font-weight: 800; color: var(--primary-dark); }
         
         .flex-manage-cols { display: flex; gap: 20px; }
         .sub-manage-box { flex: 1; background: #fff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; }
-        .list-items-box { max-height: 200px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #e2e8f0; padding: 5px; border-radius: 6px; background: #f8fafc; }
-        .list-item-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; font-size: 14px; border-bottom: 1px solid #e2e8f0; }
-        .list-item-row:last-child { border-bottom: none; }
+        .list-items-box { max-height: 240px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #e2e8f0; padding: 5px; border-radius: 6px; background: #f8fafc; }
+        
+        .config-row-item { display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #e2e8f0; gap: 6px;}
+        .config-row-item:last-child { border-bottom: none; }
         .btn-mini-del { background: none; border: none; color: var(--accent-red); font-weight: bold; cursor: pointer; }
+        .color-picker-input { width: 35px; height: 28px; padding: 0; border: none; border-radius: 4px; cursor: pointer; background: transparent; }
+
+        /* Soft Interaction Animations - functionality refresh only */
+        @keyframes softFadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes softHeaderGlow {
+            0% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+            50% { text-shadow: 0 0 12px rgba(255,255,255,0.18); }
+            100% { text-shadow: 0 0 0 rgba(255,255,255,0); }
+        }
+
+        .header-title { animation: softHeaderGlow 3s ease-in-out infinite; }
+        .creation-panel, .script-row, .analytics-card, .sub-manage-box, .empty-status-text {
+            animation: softFadeSlideUp 0.28s ease both;
+        }
+        .tab-link:hover, .sub-tab-link:hover, .btn-pro:hover, .btn-header-action:hover, .btn-micro-back:hover, .action-submit:hover {
+            transform: translateY(-1px);
+        }
+        .manager-header-exit {
+            background: var(--accent-blue);
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 13px;
+            white-space: nowrap;
+            box-shadow: 0 4px 10px rgba(59,130,246,0.25);
+            transition: var(--transition-smooth);
+            animation: softFadeSlideUp 0.28s ease both;
+        }
+        .manager-header-exit:hover { background: #2563eb; }
+
+
+        /* Extra Smooth Interaction Layer - fast and light */
+        .script-row {
+            position: relative;
+            overflow: hidden;
+            will-change: transform, box-shadow, border-color;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+        }
+        .script-row::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-blue);
+            opacity: 0;
+            transform: scaleY(0.4);
+            transition: opacity 0.18s ease, transform 0.18s ease;
+        }
+        .script-row:hover {
+            transform: translateY(-4px) scale(1.006);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+            border-color: rgba(59, 130, 246, 0.35);
+            background-color: #ffffff;
+        }
+        .script-row:hover::before {
+            opacity: 1;
+            transform: scaleY(1);
+        }
+        .script-row:hover .row-title {
+            color: var(--accent-blue);
+        }
+        .script-row:hover .row-buttons {
+            transform: translateX(-2px);
+        }
+        .row-title, .row-buttons, .row-snippet, .meta-time {
+            transition: var(--transition-smooth);
+        }
+        .btn-pro, .btn-alert, .btn-editor, .btn-header-action, .btn-micro-back, .action-submit, .tab-link, .sub-tab-link, .analytics-card, .manager-header-exit {
+            will-change: transform, box-shadow;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+        }
+        .btn-pro:hover, .btn-alert:hover, .btn-editor:hover, .btn-header-action:hover, .btn-micro-back:hover, .action-submit:hover, .manager-header-exit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.10);
+        }
+        .btn-pro:active, .btn-alert:active, .btn-editor:active, .btn-header-action:active, .btn-micro-back:active, .action-submit:active, .manager-header-exit:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08);
+        }
+        .tab-link:hover, .sub-tab-link:hover {
+            transform: translateY(-2px);
+        }
+        .tab-link.active, .sub-tab-link.active {
+            animation: activeTabPop 0.18s ease both;
+        }
+        @keyframes activeTabPop {
+            from { transform: translateY(1px); }
+            to { transform: translateY(0); }
+        }
+        .analytics-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+        }
+        .creation-panel:hover, .sub-manage-box:hover {
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+            border-color: rgba(59, 130, 246, 0.18);
+        }
+        .custom-render-badge {
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }
+        .script-row:hover .custom-render-badge {
+            transform: translateY(-1px);
+        }
+        .fullscreen-overlay {
+            animation: overlaySoftIn 0.18s ease both;
+        }
+        @keyframes overlaySoftIn {
+            from { opacity: 0; transform: scale(0.995); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .alert-box {
+            animation: modalPopIn 0.18s ease both;
+        }
+        @keyframes modalPopIn {
+            from { opacity: 0; transform: translateY(8px) scale(0.985); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .input-control {
+            transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+        }
+        .input-control:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.10);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+
+        /* Smooth Section Transition Animation Layer */
+        @keyframes sectionSoftEnter {
+            0% { opacity: 0; transform: translateY(14px) scale(0.995); filter: blur(2px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        @keyframes cardSoftRise {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .smooth-section-enter {
+            animation: sectionSoftEnter 0.28s ease-out both;
+            will-change: opacity, transform;
+        }
+
+        .smooth-list-enter > .script-row,
+        .smooth-list-enter > .empty-status-text {
+            animation: cardSoftRise 0.24s ease-out both;
+        }
+
+        .smooth-list-enter > .script-row:nth-child(1) { animation-delay: 0.02s; }
+        .smooth-list-enter > .script-row:nth-child(2) { animation-delay: 0.04s; }
+        .smooth-list-enter > .script-row:nth-child(3) { animation-delay: 0.06s; }
+        .smooth-list-enter > .script-row:nth-child(4) { animation-delay: 0.08s; }
+        .smooth-list-enter > .script-row:nth-child(5) { animation-delay: 0.10s; }
+        .smooth-list-enter > .script-row:nth-child(n+6) { animation-delay: 0.12s; }
+
     </style>
     <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore-compat.js"></script>
@@ -295,12 +606,34 @@
 <body>
 
     <header>
-        <button class="manager-btn-top" onclick="showPasswordModal()">⚙️ Manager</button>
+        <div class="header-action-container">
+            <div class="header-buttons-row" id="headerButtonsRow">
+                <button class="btn-header-action" id="videoDashboardNavBtn" onclick="toggleVideoProductionDashboardView(true)">🎬 Ready To Video</button>
+                <button class="btn-header-action" id="managerNavBtn" onclick="showPasswordModal()">⚙️ Manager</button>
+                <button class="btn-header-action" id="trashNavBtn" onclick="toggleTrashBinWorkspaceView(true)">🗑️ Global Trash</button>
+            </div>
+            <div class="back-btn-space" id="backBtnPlaceholder" style="display:none;">
+                <button class="btn-micro-back" onclick="triggerGlobalBackToScriptsNavigationRouter()">← Back to Scripts</button>
+            </div>
+            <button class="manager-header-exit" id="managerHeaderExitBtn" onclick="exitManagerMode()" style="display:none;">← Exit Manager Mode</button>
+        </div>
+        
         <div class="header-title" id="mainHeaderTitle">All Scripts</div>
+        
         <div class="stats-bar" id="mainStatsBar">
             <div class="stat-badge stat-pending" id="countPending">Pending 0</div>
             <div class="stat-badge stat-ready" id="countReady">Ready 0</div>
-            <div class="stat-badge stat-completed" id="countCompleted">Completed 0</div>
+            <div class="stat-badge stat-completed" id="countCompleted">Completed Today 0</div>
+        </div>
+
+        <div class="stats-bar" id="videoStatsBar" style="display: none;">
+            <div class="stat-badge video-bar-pending" id="videoCountPending">Pending Video 0</div>
+            <div class="stat-badge video-bar-ready" id="videoCountReady">Ready Video Today 0</div>
+        </div>
+
+        <div class="stats-bar" id="trashStatsBar" style="display: none;">
+            <div class="stat-badge trash-bar-archive" id="trashCountArchive">Archive Logs Trash 0</div>
+            <div class="stat-badge trash-bar-video" id="trashCountVideo">Ready Video Trash 0</div>
         </div>
     </header>
 
@@ -323,61 +656,169 @@
                 <button class="action-submit" onclick="createNewScriptLog()">Save To Dashboard</button>
             </div>
 
-            <div class="list-title" id="listHeader">Pending Active Logs</div>
+            <div class="list-header-wrapper">
+                <div class="list-title" id="listHeader">Pending Active Logs</div>
+                <select id="dashboardProductFilter" class="filter-control-select" onchange="drawPipelineDashboardView()">
+                    <option value="all">All Products</option>
+                </select>
+            </div>
             <div class="scripts-grid" id="gridContainer"></div>
         </main>
     </div>
 
+    <main id="videoWorkspace">
+        <div class="nav-tabs" style="margin-top: 15px;">
+            <button class="tab-link active" id="tabVideoPending" onclick="changeVideoWorkspaceSubView('pending')">Pending Video</button>
+            <button class="tab-link" id="tabVideoReady" onclick="changeVideoWorkspaceSubView('ready')">Ready Video (Today)</button>
+        </div>
+
+        <div class="list-header-wrapper">
+            <div class="list-title" id="videoPanelSectionHeader">Pending Video Logs</div>
+            <div class="filter-controls-group">
+                <select id="videoProductFilter" class="filter-control-select" onchange="drawVideoProductionDashboardView()">
+                    <option value="all">All Products</option>
+                </select>
+                <select id="videoEditorFilter" class="filter-control-select" onchange="drawVideoProductionDashboardView()">
+                    <option value="all">All Editors</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="scripts-grid" id="videoGridContainer"></div>
+    </main>
+
+    <main id="trashWorkspace">
+        <div class="nav-tabs" style="margin-top: 15px;">
+            <button class="tab-link active" id="tabTrashArchive" onclick="changeTrashWorkspaceSubView('archive')">Archive Logs Trash</button>
+            <button class="tab-link" id="tabTrashVideo" onclick="changeTrashWorkspaceSubView('video')">Ready Video Trash</button>
+        </div>
+
+        <div class="list-title" id="trashPanelSectionHeader" style="margin-bottom:15px;">All Expired Records</div>
+        <div class="scripts-grid" id="trashGridContainer"></div>
+    </main>
+
     <main id="managerWorkspace">
-        <div class="nav-tabs" style="margin-top: 25px;">
+        <div class="nav-tabs" style="margin-top: 15px;">
             <button class="tab-link active" id="tabManagerAnalytics" onclick="changeManagerView('analytics')">📊 Daily Analytics</button>
-            <button class="tab-link" id="tabManagerAll" onclick="changeManagerView('all')">⚙️ All Scripts Control</button>
+            <button class="tab-link" id="tabManagerEmployee" onclick="changeManagerView('employee')">👥 Employee Update</button>
             <button class="tab-link" id="tabManagerLists" onclick="changeManagerView('lists')">📋 Manage Dropdowns</button>
-            <button class="tab-link" id="tabManagerTrash" onclick="changeManagerView('trash')">🗑️ Trash Bin</button>
+            <button class="tab-link" id="tabManagerTrash" onclick="changeManagerView('trash')">⚙️ Modify Trash</button>
+        </div>
+
+        <div id="managerTrashSubTabsWrapper" style="display: none; justify-content: center; gap: 10px; margin-bottom: 20px;">
+            <button class="sub-tab-link active" id="subTabMgtTrash" onclick="changeManagerTrashSubView('trash')">🗑️ Manual Trash</button>
+            <button class="sub-tab-link" id="subTabMgtArchive" onclick="changeManagerTrashSubView('archive')">🗃️ Archive Logs</button>
+            <button class="sub-tab-link" id="subTabMgtVideo" onclick="changeManagerTrashSubView('video')">🎬 Ready Video</button>
+            <button class="sub-tab-link" id="subTabMgtGlobal" onclick="changeManagerTrashSubView('global')">⏳ Global Trash</button>
         </div>
 
         <div class="creation-panel" style="padding: 15px 25px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-weight: 600; color: var(--primary-dark);">Manager Tools</div>
-            <button class="btn-pro btn-view" onclick="exitManagerMode()">← Exit Manager Mode</button>
+            <div style="font-weight: 600; color: var(--primary-dark);">Manager System Operations</div>
         </div>
 
         <div id="managerAnalyticsSection">
             <div class="creation-panel">
-                <div class="panel-heading">Select Date For Analytics</div>
-                <input type="date" id="analyticsDate" class="input-control" onchange="renderManagerAnalytics()">
+                <div class="panel-heading">Select Date For Drill-Down Tracking</div>
+                <input type="date" id="analyticsDate" class="input-control" onchange="syncPipelineInfrastructure()">
             </div>
+            
             <div class="analytics-grid">
-                <div class="analytics-card"><h4>Scripts Created</h4><div class="number" id="statCreated">0</div></div>
-                <div class="analytics-card"><h4>Moved To Ready</h4><div class="number" id="statReadied">0</div></div>
-                <div class="analytics-card"><h4>Marked as Done</h4><div class="number" id="statDone">0</div></div>
+                <div class="analytics-card active-card-filter" id="cardFilterCreated" onclick="setAnalyticsDrillDownFilter('created')">
+                    <h4>Scripts Created</h4><div class="number" id="statCreated">0</div>
+                </div>
+                <div class="analytics-card" id="cardFilterReady" onclick="setAnalyticsDrillDownFilter('ready')">
+                    <h4>Moved To Ready</h4><div class="number" id="statReadied">0</div>
+                </div>
+                <div class="analytics-card" id="cardFilterDone" onclick="setAnalyticsDrillDownFilter('done')">
+                    <h4>Marked As Done</h4><div class="number" id="statDone">0</div>
+                </div>
+                <div class="analytics-card" id="cardFilterVideo" onclick="setAnalyticsDrillDownFilter('video')">
+                    <h4>Ready Video</h4><div class="number" id="statVideo">0</div>
+                </div>
             </div>
-            <div class="list-title" id="analyticsListHeader">Scripts Tracked on Selected Date</div>
+            
+            <div class="list-title" id="analyticsListHeader">Target Filter Records Ledger</div>
             <div class="scripts-grid" id="analyticsGridContainer"></div>
+        </div>
+
+        <div id="managerEmployeeUpdateSection" style="display: none;">
+            <div class="creation-panel">
+                <div class="panel-heading">Employee Video Update Report</div>
+                <div style="display:grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 12px; align-items:end;">
+                    <div>
+                        <label style="font-size:12px; font-weight:700; color:#64748b; display:block; margin-bottom:5px;">Date Range</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="date" id="employeeStartDate" class="input-control" onchange="renderEmployeeUpdateReport()">
+                            <span style="font-size:12px; font-weight:800; color:#64748b; white-space:nowrap;">to</span>
+                            <input type="date" id="employeeEndDate" class="input-control" onchange="renderEmployeeUpdateReport()">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:700; color:#64748b; display:block; margin-bottom:5px;">Employee</label>
+                        <select id="employeeMemberFilter" class="input-control" onchange="renderEmployeeUpdateReport()">
+                            <option value="all">All Employees</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:700; color:#64748b; display:block; margin-bottom:5px;">Product</label>
+                        <select id="employeeProductFilter" class="input-control" onchange="renderEmployeeUpdateReport()">
+                            <option value="all">All Products</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:center; margin-top:18px; flex-wrap:wrap;">
+                    <button class="sub-tab-link active" id="empModeProduct" onclick="setEmployeeReportMode('product')">📦 Product Report</button>
+                    <button class="sub-tab-link" id="empModeEmployee" onclick="setEmployeeReportMode('employee')">👤 Employee Report</button>
+                    <button class="sub-tab-link" id="empModeScripts" onclick="setEmployeeReportMode('scripts')">📋 Script Details</button>
+                </div>
+                <select id="employeeReportMode" style="display:none;" onchange="renderEmployeeUpdateReport()">
+                    <option value="product">Product Report</option>
+                    <option value="employee">Employee Report</option>
+                    <option value="scripts">Script Details</option>
+                </select>
+            </div>
+
+            <div class="analytics-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="analytics-card active-card-filter">
+                    <h4>Total Videos</h4><div class="number" id="empTotalVideos">0</div>
+                </div>
+                <div class="analytics-card">
+                    <h4>Total Time</h4><div class="number" id="empTotalTime" style="font-size:20px;">00:00:00</div>
+                </div>
+                <div class="analytics-card">
+                    <h4>Employees</h4><div class="number" id="empTotalPeople">0</div>
+                </div>
+            </div>
+
+            <div class="list-title" id="employeeUpdateListHeader">Product Wise Video Report</div>
+            <div class="scripts-grid" id="employeeUpdateGridContainer"></div>
         </div>
 
         <div id="managerDropdownsConfigSection" style="display: none;">
             <div class="flex-manage-cols">
                 <div class="sub-manage-box">
-                    <h3 style="margin-bottom: 15px; font-size: 16px;">Product Management</h3>
+                    <h3 style="margin-bottom: 15px; font-size: 15px;">Product Management (Colors & Edits)</h3>
                     <div class="list-items-box" id="mgrProductList"></div>
-                    <div style="display:flex; gap: 8px;">
-                        <input type="text" id="newConfigProd" class="input-control" style="padding:8px; margin-bottom:0;" placeholder="Add Product Name...">
-                        <button class="btn-pro btn-ready" onclick="addNewConfigItem('products', 'newConfigProd')">Add</button>
+                    <div style="display:flex; gap: 6px; align-items:center;">
+                        <input type="color" id="newConfigProdColor" class="color-picker-input" value="#3b82f6">
+                        <input type="text" id="newConfigProd" class="input-control" style="padding:8px; margin-bottom:0;" placeholder="Product Name...">
+                        <button class="btn-pro btn-ready" onclick="addNewConfigItem('products', 'newConfigProd', 'newConfigProdColor')">Add</button>
                     </div>
                 </div>
                 <div class="sub-manage-box">
-                    <h3 style="margin-bottom: 15px; font-size: 16px;">Team Assignment Management</h3>
+                    <h3 style="margin-bottom: 15px; font-size: 15px;">Team Assignment Management (Colors & Edits)</h3>
                     <div class="list-items-box" id="mgrMemberList"></div>
-                    <div style="display:flex; gap: 8px;">
-                        <input type="text" id="newConfigMem" class="input-control" style="padding:8px; margin-bottom:0;" placeholder="Add Member Name...">
-                        <button class="btn-pro btn-ready" onclick="addNewConfigItem('members', 'newConfigMem')">Add</button>
+                    <div style="display:flex; gap: 6px; align-items:center;">
+                        <input type="color" id="newConfigMemColor" class="color-picker-input" value="#f59e0b">
+                        <input type="text" id="newConfigMem" class="input-control" style="padding:8px; margin-bottom:0;" placeholder="Member Name...">
+                        <button class="btn-pro btn-ready" onclick="addNewConfigItem('members', 'newConfigMem', 'newConfigMemColor')">Add</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="managerListSection" style="display: none;">
-            <div class="list-title" id="managerListTitle">All Active & Archived Scripts</div>
+            <div class="list-title" id="managerListTitle">Manager Operations View</div>
             <div class="scripts-grid" id="managerGridContainer"></div>
         </div>
     </main>
@@ -399,65 +840,161 @@
 
     <div class="alert-backdrop" id="systemModal">
         <div class="alert-box">
-            <h3 id="modalTitle">Unsaved Changes Detected</h3>
-            <p id="modalDescription">You have made unsaved modifications to this script document. Do you want to save your progress before exiting?</p>
+            <h3 id="modalTitle">Notification</h3>
+            <p id="modalDescription"></p>
             <div id="modalInputContainer"></div>
             <div class="alert-btns" id="modalButtonsContainer"></div>
         </div>
     </div>
 
     <script>
+        // --- FIREBASE CLOUD STORAGE ENGINES (GITHUB LIVE VERSION) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyCRlQpB5zu6hOoMIUrJCZpZcYgDXMwVbpY",
+            apiKey: "AIzaSyCRIqpB5zu6hOoMIUrJCZpZcYgDXMWvbpY",
             authDomain: "script-manage-fa4a9.firebaseapp.com",
             projectId: "script-manage-fa4a9",
             storageBucket: "script-manage-fa4a9.firebasestorage.app",
             messagingSenderId: "895167976965",
-            appId: "1:895167976965:web:fa8b3a8b0b9c74771eae6c"
+            appId: "1:895167976965:web:fa8b3a8b09c74771eae6c",
+            measurementId: "G-8JYZJQL1WF"
         };
 
-        let db = null;
-        let scriptsRef = null;
-        let configRef = null;
-        let firebaseReady = false;
-
-        if (
-            firebaseConfig.apiKey !== "PASTE_YOUR_FULL_API_KEY_HERE" &&
-            firebaseConfig.appId !== "PASTE_YOUR_FULL_APP_ID_HERE"
-        ) {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            scriptsRef = db.collection("scripts");
-            configRef = db.collection("settings").doc("appConfig");
-            firebaseReady = true;
-        }
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const scriptsRef = db.collection("scripts");
+        const configRef = db.collection("settings").doc("appConfig");
 
         let pipelineDataStore = [];
-
-        // Dynamic Lists Management for Configuration
         let appConfigStore = {
             products: ["Green Tea", "Hair Oil", "Height Booster"],
-            members: ["Sayan", "Sourab", "Abhi", "Sabuj"]
+            productColors: { "Green Tea": "#10b981", "Hair Oil": "#3b82f6", "Height Booster": "#8b5cf6" },
+            members: ["Sayan", "Sourab", "Abhi", "Sabuj"],
+            memberColors: { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" }
         };
 
-        let executionViewContext = 'active';
-        let contextualActiveId = null;
+        let firebaseDataReady = false;
+        let firebaseConfigReady = false;
+        let firebaseSaveTimer = null;
 
+        let executionViewContext = 'active';
+        let videoViewContext = 'pending'; 
+        let trashViewContext = 'archive';
+        let drillDownAnalyticsContext = 'created'; 
+        let employeeReportContext = 'product'; 
+        let managerTrashSubContext = 'trash'; // Tracks inside option 3 sub tabs
+        
+        let isVideoDashboardMode = false; 
+        let isTrashWorkspaceMode = false;
+        
+        let contextualActiveId = null;
         let initialTitleCache = "";
         let initialBodyCache = "";
 
+        // Independent Card-Level Ticker Thread Registries
+        let cardTimerIntervalThreads = {}; 
+
         const gridContainer = document.getElementById('gridContainer');
+        const videoGridContainer = document.getElementById('videoGridContainer');
+        const trashGridContainer = document.getElementById('trashGridContainer');
         const editorOverlay = document.getElementById('editorOverlay');
         const systemModal = document.getElementById('systemModal');
         const editorSaveBtn = document.getElementById('editorSaveBtn');
         const masterCopyBtn = document.getElementById('masterCopyBtn');
 
-        // MANAGER SYSTEM VARIABLES
         const MANAGER_PASSWORD = "sabuj007";
         let isManagerMode = false;
         let managerViewContext = 'analytics';
 
-        // --- SAFETY + FIREBASE HELPERS ---
+
+        // --- SMOOTH VIEW SWITCHING ANIMATION HELPERS ---
+        function triggerSmoothSectionAnimation(elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            element.classList.remove('smooth-section-enter');
+            void element.offsetWidth;
+            element.classList.add('smooth-section-enter');
+        }
+
+        function triggerSmoothListAnimation(elementId) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            element.classList.remove('smooth-list-enter');
+            void element.offsetWidth;
+            element.classList.add('smooth-list-enter');
+        }
+
+        function triggerActiveScreenAnimation() {
+            if (isManagerMode) {
+                triggerSmoothSectionAnimation('managerWorkspace');
+                if (managerViewContext === 'analytics') triggerSmoothSectionAnimation('managerAnalyticsSection');
+                if (managerViewContext === 'employee') triggerSmoothSectionAnimation('managerEmployeeUpdateSection');
+                if (managerViewContext === 'lists') triggerSmoothSectionAnimation('managerDropdownsConfigSection');
+                if (managerViewContext === 'trash') triggerSmoothSectionAnimation('managerListSection');
+            } else if (isVideoDashboardMode) {
+                triggerSmoothSectionAnimation('videoWorkspace');
+                triggerSmoothListAnimation('videoGridContainer');
+            } else if (isTrashWorkspaceMode) {
+                triggerSmoothSectionAnimation('trashWorkspace');
+                triggerSmoothListAnimation('trashGridContainer');
+            } else {
+                triggerSmoothSectionAnimation('normalWorkspaceContainer');
+                triggerSmoothListAnimation('gridContainer');
+            }
+        }
+
+        // --- FIREBASE DATA SYNC PROCEDURES ---
+        function saveDemoDataStateSnapshot() {
+            if (!firebaseDataReady) return;
+
+            if (firebaseSaveTimer) clearTimeout(firebaseSaveTimer);
+            firebaseSaveTimer = setTimeout(async () => {
+                try {
+                    await configRef.set(appConfigStore, { merge: true });
+
+                    const batch = db.batch();
+                    pipelineDataStore.forEach(item => {
+                        if (!item || !item.id) return;
+                        const cleanItem = { ...item };
+                        delete cleanItem.__removeCompletely;
+                        batch.set(scriptsRef.doc(item.id), cleanItem, { merge: true });
+                    });
+                    await batch.commit();
+                } catch (error) {
+                    console.error("Firebase save error:", error);
+                    alert("Firebase save error. Please check internet connection and Firestore rules.");
+                }
+            }, 120);
+        }
+
+        function startRealtimeFirebaseSync() {
+            scriptsRef.orderBy("sortTimestamp", "desc").onSnapshot(snapshot => {
+                pipelineDataStore = snapshot.docs.map(doc => doc.data());
+                firebaseDataReady = true;
+                syncPipelineInfrastructure();
+            }, error => {
+                console.error("Firebase scripts load error:", error);
+                alert("Firebase data load error. Please check Firestore rules/config.");
+            });
+
+            configRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    appConfigStore = {
+                        products: data.products || ["Green Tea", "Hair Oil", "Height Booster"],
+                        productColors: data.productColors || { "Green Tea": "#10b981", "Hair Oil": "#3b82f6", "Height Booster": "#8b5cf6" },
+                        members: data.members || ["Sayan", "Sourab", "Abhi", "Sabuj"],
+                        memberColors: data.memberColors || { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" }
+                    };
+                    firebaseConfigReady = true;
+                    syncPipelineInfrastructure();
+                } else {
+                    configRef.set(appConfigStore);
+                    firebaseConfigReady = true;
+                }
+            }, error => {
+                console.error("Firebase config load error:", error);
+            });
+        }
 
         function escapeHTML(value) {
             const div = document.createElement('div');
@@ -477,181 +1014,201 @@
                 .replace(/\r/g, "\\r");
         }
 
-        function getServerTimestamp() {
-            return firebaseReady ? firebase.firestore.FieldValue.serverTimestamp() : new Date();
-        }
-
         function getCurrentTimestamp() {
             return new Date().toLocaleString('en-IN', { hour12: true });
         }
 
-        function normalizeFirestoreDate(value) {
-            if (!value) return null;
-
-            if (value.toDate && typeof value.toDate === 'function') {
-                return value.toDate();
-            }
-
-            if (value instanceof Date) {
-                return value;
-            }
-
-            if (typeof value === 'string') {
-                const parsed = new Date(value);
-                if (!isNaN(parsed.getTime())) return parsed;
-                return null;
-            }
-
-            return null;
+        function getTodayDateStringMatch() {
+            return new Date().toLocaleDateString('en-IN');
         }
 
-        function formatDisplayTime(timestampValue, fallbackValue) {
-            const dateValue = normalizeFirestoreDate(timestampValue);
-            if (dateValue) {
-                return dateValue.toLocaleString('en-IN', { hour12: true });
-            }
-            return fallbackValue || '';
-        }
-
-        function getDateMatchString(timestampValue, fallbackValue) {
-            const dateValue = normalizeFirestoreDate(timestampValue);
-            if (dateValue) {
-                return dateValue.toLocaleDateString('en-IN');
-            }
-
-            if (fallbackValue && typeof fallbackValue === 'string') {
-                return fallbackValue;
-            }
-
-            return '';
-        }
-
-        function sortPipelineData() {
-            pipelineDataStore.sort((a, b) => {
-                const aSort = a.sortTimestamp || 0;
-                const bSort = b.sortTimestamp || 0;
-                return bSort - aSort;
+        function quickDirectCopyFromCard(id, element) {
+            const target = pipelineDataStore.find(item => item.id === id);
+            if (!target || !target.body) return;
+            navigator.clipboard.writeText(target.body).then(() => {
+                const prevText = element.innerText;
+                element.innerText = "Copied! ✓";
+                element.style.backgroundColor = "var(--accent-green)";
+                element.style.color = "white";
+                setTimeout(() => {
+                    element.innerText = prevText;
+                    element.style.backgroundColor = "";
+                    element.style.color = "";
+                }, 1500);
             });
         }
 
-        function showFirebaseConfigWarning() {
-            gridContainer.innerHTML = `<div class="empty-status-text">Firebase config missing. Please paste your full apiKey and appId inside index.html.</div>`;
-            computePipelineCounters();
-        }
+        function synchronizeDropdownFilteringMenus() {
+            const dashProdFilter = document.getElementById('dashboardProductFilter');
+            const videoProdFilter = document.getElementById('videoProductFilter');
+            const videoEditFilter = document.getElementById('videoEditorFilter');
 
-        function startRealtimeFirebaseSync() {
-            if (!firebaseReady) {
-                showFirebaseConfigWarning();
-                return;
-            }
+            const cacheDashProd = dashProdFilter ? dashProdFilter.value : 'all';
+            const cacheVideoProd = videoProdFilter ? videoProdFilter.value : 'all';
+            const cacheVideoEdit = videoEditFilter ? videoEditFilter.value : 'all';
 
-            scriptsRef.onSnapshot(snapshot => {
-                pipelineDataStore = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        ...data,
-                        id: data.id || doc.id
-                    };
-                });
-
-                sortPipelineData();
-                syncPipelineInfrastructure();
-            }, error => {
-                console.error("Firestore scripts sync error:", error);
-                alert("Firebase data load error. Please check Firebase config and Firestore rules.");
+            let productListMarkup = '<option value="all">All Products</option>';
+            appConfigStore.products.forEach(p => {
+                productListMarkup += `<option value="${escapeAttr(p)}">${escapeHTML(p)}</option>`;
             });
 
-            configRef.onSnapshot(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    appConfigStore = {
-                        products: Array.isArray(data.products) ? data.products : ["Green Tea", "Hair Oil", "Height Booster"],
-                        members: Array.isArray(data.members) ? data.members : ["Sayan", "Sourab", "Abhi", "Sabuj"]
-                    };
+            let memberListMarkup = '<option value="all">All Editors</option>';
+            appConfigStore.members.forEach(m => {
+                // FIXED THE BUG HERE: using proper backticks `` instead of mixed quotes `'
+                memberListMarkup += `<option value="${escapeAttr(m)}">${escapeHTML(m)}</option>`;
+            });
 
-                    if (isManagerMode && managerViewContext === 'lists') {
-                        renderConfigManagementLists();
-                    }
-                } else {
-                    configRef.set(appConfigStore, { merge: true });
+            if(dashProdFilter) dashProdFilter.innerHTML = productListMarkup;
+            if(videoProdFilter) videoProdFilter.innerHTML = productListMarkup;
+            if(videoEditFilter) videoEditFilter.innerHTML = memberListMarkup;
+
+            if (dashProdFilter && appConfigStore.products.includes(cacheDashProd)) dashProdFilter.value = cacheDashProd;
+            if (videoProdFilter && appConfigStore.products.includes(cacheVideoProd)) videoProdFilter.value = cacheVideoProd;
+            if (videoEditFilter && appConfigStore.members.includes(cacheVideoEdit)) videoEditFilter.value = cacheVideoEdit;
+        }
+
+        // --- INLINE INDEPENDENT MULTI-TIMER ENGINE MECHANISMS ---
+        function formatMillisecondsToTimerString(ms) {
+            let totalSeconds = Math.floor(ms / 1000);
+            let hours = Math.floor(totalSeconds / 3600);
+            let minutes = Math.floor((totalSeconds % 3600) / 60);
+            let seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function executeStartEditingSequence(id) {
+            const target = pipelineDataStore.find(i => i.id === id);
+            if (!target || target.isEditingCurrentlyActive || target.editStartEpoch) return;
+
+            target.editStartEpoch = Date.now();
+            target.editStartClockTime = getCurrentTimestamp();
+            target.isEditingCurrentlyActive = true;
+
+            saveDemoDataStateSnapshot();
+            launchLiveInlineCardTickerThread(id, target.editStartEpoch);
+            syncPipelineInfrastructure();
+        }
+
+        function launchLiveInlineCardTickerThread(id, startEpoch) {
+            if (cardTimerIntervalThreads[id]) clearInterval(cardTimerIntervalThreads[id]);
+
+            cardTimerIntervalThreads[id] = setInterval(() => {
+                const element = document.getElementById(`ticker_${id}`);
+                if (element) {
+                    const elapsed = Date.now() - startEpoch;
+                    element.innerText = formatMillisecondsToTimerString(elapsed);
                 }
-            }, error => {
-                console.error("Firestore config sync error:", error);
+            }, 1000);
+        }
+
+        function clearAndWipeActiveTickerThread(id) {
+            if (cardTimerIntervalThreads[id]) {
+                clearInterval(cardTimerIntervalThreads[id]);
+                delete cardTimerIntervalThreads[id];
+            }
+        }
+
+        function restoreActiveTimerThreadsOnViewRefresh() {
+            pipelineDataStore.forEach(item => {
+                if (item.isEditingCurrentlyActive && !item.isDeleted && !item.isExpired && item.videoStage === 'pending') {
+                    launchLiveInlineCardTickerThread(item.id, item.editStartEpoch);
+                }
             });
         }
 
-        // --- CORE SCRIPT FUNCTIONS ---
+        function executeEditDoneSequence(id) {
+            const target = pipelineDataStore.find(i => i.id === id);
+            if (!target || !target.isEditingCurrentlyActive) return;
 
-        async function createNewScriptLog() {
+            const stopEpoch = Date.now();
+            const elapsedMillis = stopEpoch - target.editStartEpoch;
+
+            // Clear operational intervals thread safeties
+            clearAndWipeActiveTickerThread(id);
+
+            target.editEndClockTime = getCurrentTimestamp();
+            target.totalElapsedTimeFormatted = formatMillisecondsToTimerString(elapsedMillis);
+            target.isEditingCurrentlyActive = false;
+
+            // Compute values for clean notification output metrics
+            let totalSeconds = Math.floor(elapsedMillis / 1000);
+            let computedHours = Math.floor(totalSeconds / 3600);
+            let computedMinutes = Math.floor((totalSeconds % 3600) / 60);
+            let computedSeconds = totalSeconds % 60;
+
+            // Complete lifecycle routing to finalized logs state
+            target.videoStage = 'ready';
+            target.videoCreatedTimestamp = getCurrentTimestamp();
+
+            saveDemoDataStateSnapshot();
+
+            showModalDialogue(
+                "Video Editing Complete! 🎉",
+                `You done the video in ${computedHours} hours, ${computedMinutes} minutes, ${computedSeconds} seconds!`,
+                '',
+                `<button class="btn-alert btn-confirm-save" onclick="dismissModalOverlay(); syncPipelineInfrastructure();">OK</button>`
+            );
+        }
+
+        // --- PRODUCTION LOGIC LIFECYCLE ROUTINES ---
+        function createNewScriptLog() {
             const titleVal = document.getElementById('prodTitle').value.trim();
             const bodyVal = document.getElementById('prodScript').value.trim();
 
             if (!titleVal || !bodyVal) {
-                alert("Please fill in both the Product Title and Script text fields.");
-                return;
-            }
-
-            if (!firebaseReady) {
-                alert("Firebase config missing. Please add apiKey and appId first.");
+                alert("Please fill in both the Product Title and Script text content boxes completely.");
                 return;
             }
 
             const newId = "log_" + Date.now();
-            const nowString = getCurrentTimestamp();
-            const nowSort = Date.now();
-
             const logRecord = {
                 id: newId,
                 title: titleVal,
                 body: bodyVal,
                 stage: 'pending',
-                isDeleted: false,
-                createdTimestamp: nowString,
+                videoStage: 'none', 
+                isDeleted: false,      
+                isExpired: false,
+                archiveLogPurged: false,
+                videoLogPurged: false,
+                createdTimestamp: getCurrentTimestamp(),
                 readyTimestamp: null,
                 completedTimestamp: null,
+                videoCreatedTimestamp: null,
                 deletedTimestamp: null,
+                expiredTimestamp: null,
                 assignedProduct: null,
                 assignedMember: null,
-                createdAt: getServerTimestamp(),
-                readyAt: null,
-                completedAt: null,
-                deletedAt: null,
-                updatedAt: getServerTimestamp(),
-                sortTimestamp: nowSort
+                sortTimestamp: Date.now(),
+                
+                // Active independent live timer state records tracking definitions
+                editStartEpoch: null,
+                editStartClockTime: null,
+                editEndClockTime: null,
+                totalElapsedTimeFormatted: null,
+                isEditingCurrentlyActive: false
             };
 
-            try {
-                await scriptsRef.doc(newId).set(logRecord);
-                document.getElementById('prodTitle').value = '';
-                document.getElementById('prodScript').value = '';
-            } catch (error) {
-                console.error("Create script error:", error);
-                alert("Script save failed. Please check Firebase rules/config.");
-            }
+            pipelineDataStore.unshift(logRecord);
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
+
+            document.getElementById('prodTitle').value = '';
+            document.getElementById('prodScript').value = '';
         }
 
-        async function shiftScriptStage(id, targetStage) {
-            if (!firebaseReady) return;
-
-            const updateData = {
-                stage: targetStage,
-                updatedAt: getServerTimestamp()
-            };
-
-            if (targetStage === 'ready') {
-                updateData.readyTimestamp = getCurrentTimestamp();
-                updateData.readyAt = getServerTimestamp();
-            }
-
-            try {
-                await scriptsRef.doc(id).update(updateData);
-            } catch (error) {
-                console.error("Stage update error:", error);
-                alert("Stage update failed.");
-            }
+        function shiftScriptStage(id, targetStage) {
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === id) {
+                    item.stage = targetStage;
+                    if (targetStage === 'ready') item.readyTimestamp = getCurrentTimestamp();
+                }
+                return item;
+            });
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
         }
 
-        // CUSTOM POPUP FOR MARK DONE SELECTION PIPELINE 
         function openMarkDoneSelectionPopup(id) {
             let productOptionsMarkup = appConfigStore.products.map(p => `<option value="${escapeAttr(p)}">${escapeHTML(p)}</option>`).join('');
             let memberOptionsMarkup = appConfigStore.members.map(m => `<option value="${escapeAttr(m)}">${escapeHTML(m)}</option>`).join('');
@@ -677,147 +1234,160 @@
             );
         }
 
-        async function executeCustomMarkDone(id) {
+        function executeCustomMarkDone(id) {
             const chosenProd = document.getElementById('popupSelectProd').value;
             const chosenMember = document.getElementById('popupSelectMember').value;
 
-            if (!chosenProd || !chosenMember) {
-                alert("Please make sure you have both selections assigned.");
-                return;
-            }
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === id) {
+                    item.stage = 'completed';
+                    item.videoStage = 'pending'; 
+                    item.assignedProduct = chosenProd;
+                    item.assignedMember = chosenMember;
+                    item.completedTimestamp = getCurrentTimestamp();
+                }
+                return item;
+            });
 
-            if (!firebaseReady) return;
-
-            try {
-                await scriptsRef.doc(id).update({
-                    stage: 'completed',
-                    assignedProduct: chosenProd,
-                    assignedMember: chosenMember,
-                    completedTimestamp: getCurrentTimestamp(),
-                    completedAt: getServerTimestamp(),
-                    updatedAt: getServerTimestamp()
-                });
-
-                dismissModalOverlay();
-            } catch (error) {
-                console.error("Mark done error:", error);
-                alert("Mark Done failed.");
-            }
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
         }
 
-        // SOFT DELETE (Move to Trash)
-        function triggerDestructiveDeleteVerification(id) {
+        function triggerSoftDeleteRoutingVerification(id) {
             showModalDialogue(
-                "Move to Trash?",
-                "Are you sure you want to delete this script? It will be moved to the Manager's Trash Bin.",
+                "Move to Trash Bin?",
+                "Are you sure you want to delete this script? It will be directed straight into the Manager's secure manual trash vault.",
                 '',
                 `
                 <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
-                <button class="btn-alert btn-confirm-discard" onclick="executeSoftDelete('${escapeJSString(id)}')">Delete</button>
+                <button class="btn-alert btn-confirm-discard" onclick="executeSoftDeleteContextRouting('${escapeJSString(id)}')">Delete</button>
                 `
             );
         }
 
-        async function executeSoftDelete(id) {
-            if (!firebaseReady) return;
+        function executeSoftDeleteContextRouting(id) {
+            // Clean active timers if deleted unexpectedly while tracking session active states
+            clearAndWipeActiveTickerThread(id);
 
-            try {
-                await scriptsRef.doc(id).update({
-                    isDeleted: true,
-                    deletedTimestamp: getCurrentTimestamp(),
-                    deletedAt: getServerTimestamp(),
-                    updatedAt: getServerTimestamp()
-                });
-
-                dismissModalOverlay();
-            } catch (error) {
-                console.error("Soft delete error:", error);
-                alert("Delete failed.");
-            }
-        }
-
-        function quickDirectCopyFromCard(id, buttonElement) {
-            const item = pipelineDataStore.find(i => i.id === id);
-            if (!item || !item.body) return;
-
-            navigator.clipboard.writeText(item.body).then(() => {
-                const originalText = buttonElement.innerHTML;
-                buttonElement.innerHTML = "Copied! ✓";
-                buttonElement.style.backgroundColor = "var(--accent-green)";
-                buttonElement.style.color = "white";
-
-                setTimeout(() => {
-                    buttonElement.innerHTML = originalText;
-                    buttonElement.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
-                    buttonElement.style.color = "var(--accent-green)";
-                }, 1500);
-            }).catch(err => {
-                alert("Copy failed, please view full screen to copy manually.");
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === id) {
+                    item.isDeleted = true;
+                    item.deletedTimestamp = getCurrentTimestamp();
+                    item.isEditingCurrentlyActive = false;
+                }
+                return item;
             });
+
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
         }
 
-        // RENDER NORMAL DASHBOARD
+        function evaluateAutoExpirationTrackingLifecycle() {
+            const todayStr = getTodayDateStringMatch();
+            let stateMutated = false;
+
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (!item.isDeleted && !item.isExpired) {
+                    if (item.stage === 'completed' && item.videoStage !== 'ready') {
+                        if (item.completedTimestamp && !item.completedTimestamp.includes(todayStr)) {
+                            item.isExpired = true;
+                            item.expiredTimestamp = getCurrentTimestamp();
+                            item.expiredFromContext = 'archive';
+                            stateMutated = true;
+                        }
+                    } else if (item.stage === 'completed' && item.videoStage === 'ready') {
+                        if (item.videoCreatedTimestamp && !item.videoCreatedTimestamp.includes(todayStr)) {
+                            item.isExpired = true;
+                            item.expiredTimestamp = getCurrentTimestamp();
+                            item.expiredFromContext = 'video';
+                            stateMutated = true;
+                        }
+                    }
+                }
+                return item;
+            });
+
+            if (stateMutated) saveDemoDataStateSnapshot();
+        }
+
+        // --- DASHBOARD UI PANELS CONDITIONAL RENDERING ---
         function drawPipelineDashboardView() {
-            if (isManagerMode) return;
+            if (isManagerMode || isVideoDashboardMode || isTrashWorkspaceMode) return;
 
             gridContainer.innerHTML = '';
+            const selectedFilterValue = document.getElementById('dashboardProductFilter').value;
+            const todayStr = getTodayDateStringMatch();
 
             let filteredSet = pipelineDataStore.filter(item => {
-                if (item.isDeleted) return false;
-                if (executionViewContext === 'active') return item.stage === 'pending';
-                if (executionViewContext === 'ready') return item.stage === 'ready';
-                return item.stage === 'completed';
+                if (item.isDeleted || item.isExpired) return false;
+                
+                let matchStage = false;
+                if (executionViewContext === 'active') matchStage = (item.stage === 'pending');
+                else if (executionViewContext === 'ready') matchStage = (item.stage === 'ready');
+                else {
+                    if(item.stage !== 'completed') return false;
+                    return (item.completedTimestamp && item.completedTimestamp.includes(todayStr));
+                }
+
+                if (!matchStage) return false;
+
+                if (selectedFilterValue !== 'all') {
+                    const searchTarget = String(selectedFilterValue).toLowerCase();
+                    const titleText = String(item.title || '').toLowerCase();
+                    const bodyText = String(item.body || '').toLowerCase();
+                    return (titleText.includes(searchTarget) || bodyText.includes(searchTarget));
+                }
+
+                return true;
             });
 
             if (filteredSet.length === 0) {
-                gridContainer.innerHTML = `<div class="empty-status-text">No data files located inside this tracking pipeline index segment.</div>`;
+                gridContainer.innerHTML = `<div class="empty-status-text">No active layout elements tracking located matching search filters boundaries.</div>`;
                 return;
             }
 
             filteredSet.forEach(item => {
                 const rowElement = document.createElement('div');
                 rowElement.className = 'script-row';
-
-                let stampDisplay = formatDisplayTime(item.createdAt, item.createdTimestamp);
-                let assignmentMetadataMarkup = '';
                 const safeId = escapeJSString(item.id);
 
-                if (item.stage === 'ready') {
-                    stampDisplay = `Ready since: ${formatDisplayTime(item.readyAt, item.readyTimestamp || item.createdTimestamp)}`;
-                }
+                let stampDisplay = item.createdTimestamp;
+                let assignmentMetadataMarkup = '';
+
+                if (item.stage === 'ready') stampDisplay = `Ready since: ${item.readyTimestamp || item.createdTimestamp}`;
                 if (item.stage === 'completed') {
-                    stampDisplay = `Finished: ${formatDisplayTime(item.completedAt, item.completedTimestamp || item.createdTimestamp)}`;
-                    // Inject routing details to card inner container directly as required
+                    stampDisplay = `Finished: ${item.completedTimestamp || item.createdTimestamp}`;
+                    
+                    const pColor = appConfigStore.productColors[item.assignedProduct] || '#10b981';
+                    const mColor = appConfigStore.memberColors[item.assignedMember] || '#3b82f6';
+
                     assignmentMetadataMarkup = `
-                        <div style="font-size: 13px; color: var(--primary-dark); margin: 6px 0; background: #f0fdf4; padding: 4px 10px; border-radius: 6px; display: inline-block; font-weight: 600;">
-                            📦 Product: <span style="color:var(--accent-green)">${escapeHTML(item.assignedProduct || 'None')}</span> | 👤 Assigned To: <span style="color:var(--accent-blue)">${escapeHTML(item.assignedMember || 'None')}</span>
+                        <div style="margin: 4px 0; display:flex; gap:6px; flex-wrap:wrap;">
+                            <span class="custom-render-badge" style="background: rgba(16,185,129,0.05); color: ${pColor}; border:1px solid ${pColor}26;">📦 Product: ${escapeHTML(item.assignedProduct)}</span>
+                            <span class="custom-render-badge" style="background: rgba(59,130,246,0.05); color: ${mColor}; border:1px solid ${mColor}26;">👤 Assigned To: ${escapeHTML(item.assignedMember)}</span>
                         </div>
                     `;
                 }
 
                 const copyBtnMarkup = `<button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>`;
-
                 let operationsButtonsMarkup = '';
+
                 if (executionViewContext === 'active') {
                     operationsButtonsMarkup = `
-                        ${copyBtnMarkup}
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View Full Screen</button>
+                        ${copyBtnMarkup} <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
                         <button class="btn-pro btn-ready" onclick="shiftScriptStage('${safeId}', 'ready')">Ready</button>
-                        <button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${safeId}')">Delete</button>
+                        <button class="btn-pro btn-delete" onclick="triggerSoftDeleteRoutingVerification('${safeId}')">Delete</button>
                     `;
                 } else if (executionViewContext === 'ready') {
                     operationsButtonsMarkup = `
-                        ${copyBtnMarkup}
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View Full Screen</button>
+                        ${copyBtnMarkup} <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
                         <button class="btn-pro btn-done" onclick="openMarkDoneSelectionPopup('${safeId}')">Mark Done ✓</button>
-                        <button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${safeId}')">Delete</button>
+                        <button class="btn-pro btn-delete" onclick="triggerSoftDeleteRoutingVerification('${safeId}')">Delete</button>
                     `;
                 } else {
-                    // ARCHIVE LOGS OPERATIONS PANEL - Strict Read-only View Engine Mode activated (No edit / delete controls present)
-                    operationsButtonsMarkup = `
-                        ${copyBtnMarkup}
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View Full Screen</button>
-                    `;
+                    operationsButtonsMarkup = `${copyBtnMarkup} <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>`;
                 }
 
                 rowElement.innerHTML = `
@@ -827,28 +1397,329 @@
                         ${assignmentMetadataMarkup}
                         <div class="row-snippet" style="margin-top:4px;">${escapeHTML(item.body)}</div>
                     </div>
-                    <div class="row-buttons">
-                        ${operationsButtonsMarkup}
-                    </div>
+                    <div class="row-buttons">${operationsButtonsMarkup}</div>
                 `;
                 gridContainer.appendChild(rowElement);
             });
         }
 
+        function drawVideoProductionDashboardView() {
+            if (!isVideoDashboardMode || isManagerMode || isTrashWorkspaceMode) return;
+
+            videoGridContainer.innerHTML = '';
+            const chosenProdFilter = document.getElementById('videoProductFilter').value;
+            const chosenUserFilter = document.getElementById('videoEditorFilter').value;
+            const todayStr = getTodayDateStringMatch();
+
+            let dataset = pipelineDataStore.filter(item => {
+                if (item.isDeleted || item.isExpired || item.stage !== 'completed') return false;
+                
+                if (videoViewContext === 'pending') {
+                    if(item.videoStage !== 'pending') return false;
+                } else {
+                    if(item.videoStage !== 'ready') return false;
+                    if(!item.videoCreatedTimestamp || !item.videoCreatedTimestamp.includes(todayStr)) return false;
+                }
+
+                if (chosenProdFilter !== 'all' && item.assignedProduct !== chosenProdFilter) return false;
+                if (chosenUserFilter !== 'all' && item.assignedMember !== chosenUserFilter) return false;
+
+                return true;
+            });
+
+            if (dataset.length === 0) {
+                videoGridContainer.innerHTML = `<div class="empty-status-text">No active data scripts located inside this queue layer subset loop.</div>`;
+                return;
+            }
+
+            dataset.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'script-row';
+                const safeId = escapeJSString(item.id);
+
+                let timeStampMarkup = `Given to Artist: <strong>${escapeHTML(item.completedTimestamp)}</strong>`;
+                let timeLogsSummaryHistoryMarkup = '';
+
+                // Clean-cut textless inline timer rendering area context calculation
+                let inlineLiveTickerDisplayHTML = '';
+
+                if (item.videoStage === 'ready') {
+                    timeStampMarkup += ` | Produced: <strong>${escapeHTML(item.videoCreatedTimestamp)}</strong>`;
+                    
+                    timeLogsSummaryHistoryMarkup = `
+                        <div style="font-size:12px; margin-top:6px; color:#475569; background:#f1f5f9; padding:8px; border-radius:6px; border:1px solid #e2e8f0;">
+                            🟢 <strong>Started Editing:</strong> ${escapeHTML(item.editStartClockTime || 'N/A')}<br>
+                            🔴 <strong>Edit Done Logged:</strong> ${escapeHTML(item.editEndClockTime || 'N/A')}<br>
+                            ⚡ <strong>Total Editing Duration:</strong> <span style="color:var(--accent-green); font-weight:800;">${escapeHTML(item.totalElapsedTimeFormatted || '00:00:00')}</span>
+                        </div>
+                    `;
+                } else if (item.videoStage === 'pending') {
+                    // Calculate immediate current snapshot string values safely
+                    let runningTickerClockStringValue = "00:00:00";
+                    if (item.editStartEpoch) {
+                        const difference = Date.now() - item.editStartEpoch;
+                        runningTickerClockStringValue = formatMillisecondsToTimerString(difference);
+                    }
+
+                    // Render naked timer on target green marked position inside text flows
+                    inlineLiveTickerDisplayHTML = `
+                        <div style="text-align: right; width: 100%;">
+                            <span class="card-live-ticker-display" id="ticker_${item.id}" style="margin-top: 0; margin-bottom: 8px;">${runningTickerClockStringValue}</span>
+                        </div>
+                    `;
+                }
+
+                const pColor = appConfigStore.productColors[item.assignedProduct] || '#10b981';
+                const mColor = appConfigStore.memberColors[item.assignedMember] || '#3b82f6';
+
+                let badgeInfoMarkup = `
+                    <div style="margin: 4px 0; display: flex; gap: 6px; flex-wrap: wrap;">
+                        <span class="custom-render-badge" style="background: rgba(16,185,129,0.05); color: ${pColor}; border:1px solid ${pColor}26;">📦 Product: ${escapeHTML(item.assignedProduct)}</span>
+                        <span class="custom-render-badge" style="background: rgba(245,158,11,0.05); color: ${mColor}; border:1px solid ${mColor}26;">👤 Editor Name: ${escapeHTML(item.assignedMember)}</span>
+                    </div>
+                `;
+
+                const copyBtnMarkup = `<button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>`;
+                let actionsContainerMarkup = `${copyBtnMarkup} <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>`;
+
+                if (item.videoStage === 'pending') {
+                    // Check button interactive states parameters constraints rules validation
+                    const clickHasAlreadyOccurred = (item.editStartEpoch !== null);
+                    const isDoneActionAllowed = item.isEditingCurrentlyActive;
+
+                    // Disable start button styling if clicked once already to prevent double actions execution loop resets
+                    const startButtonDisabledAttribute = clickHasAlreadyOccurred ? 'disabled style="opacity:0.5; cursor:not-allowed;" title="Session already initialized"' : '';
+                    const startActionTriggerHTML = clickHasAlreadyOccurred ? '' : `onclick="executeStartEditingSequence('${safeId}')"`;
+
+                    const doneActionTriggerHTML = isDoneActionAllowed ? `onclick="executeEditDoneSequence('${safeId}')"` : '';
+                    const doneButtonDisabledInlineStyle = !isDoneActionAllowed ? 'style="opacity: 0.5; cursor: not-allowed;" title="Please click Start Editing first"' : '';
+
+                    actionsContainerMarkup += `
+                        <button class="btn-pro btn-start-edit" ${startActionTriggerHTML} ${startButtonDisabledAttribute}>Start Editing ⏱️</button>
+                        <button class="btn-pro btn-edit-done" ${doneActionTriggerHTML} ${doneButtonDisabledInlineStyle}>Edit Done ✓</button>
+                    `;
+                }
+
+                row.innerHTML = `
+                    <div class="row-details">
+                        <div class="meta-time">⏱️ ${timeStampMarkup}</div>
+                        <div class="row-title">${escapeHTML(item.title)}</div>
+                        ${badgeInfoMarkup}
+                        <div class="row-snippet" style="margin-top:4px;">${escapeHTML(item.body)}</div>
+                        ${timeLogsSummaryHistoryMarkup}
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center;">
+                        ${inlineLiveTickerDisplayHTML}
+                        <div class="row-buttons">${actionsContainerMarkup}</div>
+                    </div>
+                `;
+                videoGridContainer.appendChild(row);
+            });
+
+            // Re-instantiate tracking intervals hooks loop parameters immediately following DOM rewrites execution pipelines
+            restoreActiveTimerThreadsOnViewRefresh();
+        }
+
+        function drawTrashBinWorkspaceView() {
+            if (!isTrashWorkspaceMode || isManagerMode || isVideoDashboardMode) return;
+
+            trashGridContainer.innerHTML = '';
+            let dataset = pipelineDataStore.filter(item => {
+                if (!item.isExpired) return false;
+                return (trashViewContext === item.expiredFromContext);
+            });
+
+            if (dataset.length === 0) {
+                trashGridContainer.innerHTML = `<div class="empty-status-text">No timeout automatic 24H expired tracking assets detected inside storage context nodes.</div>`;
+                return;
+            }
+
+            dataset.forEach(item => {
+                const row = document.createElement('div');
+                row.className = 'script-row';
+                const safeId = escapeJSString(item.id);
+
+                let trackingHistoryLabelsMarkup = '';
+                if (trashViewContext === 'archive') {
+                    trackingHistoryLabelsMarkup = `
+                        <div style="font-size:12px; color:#475569; margin: 4px 0; background:#f8fafc; padding:6px 12px; border-radius:6px;">
+                            📦 Product Ref: <strong>${escapeHTML(item.assignedProduct || 'None')}</strong> | 👤 Script Allocated To: <strong>${escapeHTML(item.assignedMember || 'None')}</strong><br>
+                            📥 Completed Loop Initial Influx Timestamp: ${escapeHTML(item.completedTimestamp)}<br>
+                            ⏱ Automated 24H Expiration Timeout Log Stamp: <span style="color:var(--accent-orange); font-weight:700;">${escapeHTML(item.expiredTimestamp)}</span>
+                        </div>
+                    `;
+                } else {
+                    trackingHistoryLabelsMarkup = `
+                        <div style="font-size:12px; color:#475569; margin: 4px 0; background:#f8fafc; padding:6px 12px; border-radius:6px;">
+                            📦 Product Target: <strong>${escapeHTML(item.assignedProduct)}</strong> | 👤 Bound Editor Context: <strong>${escapeHTML(item.assignedMember)}</strong><br>
+                            📥 Allocation: ${escapeHTML(item.completedTimestamp)} | 🎬 Video Ready Completion Stamp: ${escapeHTML(item.videoCreatedTimestamp)}<br>
+                            ⚡ Total Saved Production Time: <strong>${escapeHTML(item.totalElapsedTimeFormatted || 'N/A')}</strong><br>
+                            ⏱ Automated 24H Expiration Timeout Log Stamp: <span style="color:var(--accent-orange); font-weight:700;">${escapeHTML(item.expiredTimestamp)}</span>
+                        </div>
+                    `;
+                }
+
+                row.innerHTML = `
+                    <div class="row-details">
+                        <div class="meta-time">Expired Record Index Key Ref: ${escapeHTML(item.id)}</div>
+                        <div class="row-title">${escapeHTML(item.title)}</div>
+                        ${trackingHistoryLabelsMarkup}
+                        <div class="row-snippet" style="margin-top:2px;">${escapeHTML(item.body)}</div>
+                    </div>
+                    <div class="row-buttons">
+                        <button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>
+                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
+                    </div>
+                `;
+                trashGridContainer.appendChild(row);
+            });
+        }
+
         function computePipelineCounters() {
-            const activeSet = pipelineDataStore.filter(i => !i.isDeleted);
+            const activeSet = pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired);
+            const todayStr = getTodayDateStringMatch();
+
             const pendingCount = activeSet.filter(i => i.stage === 'pending').length;
             const readyCount = activeSet.filter(i => i.stage === 'ready').length;
-            const completeCount = activeSet.filter(i => i.stage === 'completed').length;
+            const completeTodayCount = activeSet.filter(i => i.stage === 'completed' && i.completedTimestamp && i.completedTimestamp.includes(todayStr)).length;
 
             document.getElementById('countPending').innerText = `Pending ${pendingCount}`;
             document.getElementById('countReady').innerText = `Ready ${readyCount}`;
-            document.getElementById('countCompleted').innerText = `Completed ${completeCount}`;
+            document.getElementById('countCompleted').innerText = `Completed Today ${completeTodayCount}`;
+
+            const videoPendingCount = pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'completed' && i.videoStage === 'pending').length;
+            const videoReadyTodayCount = pipelineDataStore.filter(i => {
+                return (!i.isDeleted && !i.isExpired && i.stage === 'completed' && i.videoStage === 'ready' && i.videoCreatedTimestamp && i.videoCreatedTimestamp.includes(todayStr));
+            }).length;
+
+            document.getElementById('videoCountPending').innerText = `Pending Video ${videoPendingCount}`;
+            document.getElementById('videoCountReady').innerText = `Ready Video Today ${videoReadyTodayCount}`;
+
+            const trashArchiveCount = pipelineDataStore.filter(i => i.isExpired && i.expiredFromContext === 'archive').length;
+            const trashVideoCount = pipelineDataStore.filter(i => i.isExpired && i.expiredFromContext === 'video').length;
+            document.getElementById('trashCountArchive').innerText = `Archive Logs Trash ${trashArchiveCount}`;
+            document.getElementById('trashCountVideo').innerText = `Ready Video Trash ${trashVideoCount}`;
+        }
+
+        // --- GLOBAL MULTI ROUTING WORKSPACE ACTIONS CONTROL PANEL ---
+        function toggleVideoProductionDashboardView(activateVideoMode) {
+            if(isManagerMode) exitManagerMode();
+            if(isTrashWorkspaceMode) toggleTrashBinWorkspaceView(false);
+
+            isVideoDashboardMode = activateVideoMode;
+            const normalContainer = document.getElementById('normalWorkspaceContainer');
+            const videoContainer = document.getElementById('videoWorkspace');
+            const navBtn = document.getElementById('videoDashboardNavBtn');
+            const backBtnPlaceholder = document.getElementById('backBtnPlaceholder');
+            const managerHeaderExitBtn = document.getElementById('managerHeaderExitBtn');
+            if (managerHeaderExitBtn) managerHeaderExitBtn.style.display = 'none';
+
+            const standardCountersBar = document.getElementById('mainStatsBar');
+            const videoCountersBar = document.getElementById('videoStatsBar');
+            const trashCountersBar = document.getElementById('trashStatsBar');
+
+            if (activateVideoMode) {
+                normalContainer.style.display = 'none';
+                videoContainer.style.display = 'block';
+                document.getElementById('mainHeaderTitle').innerText = "Production Video Matrix";
+                navBtn.classList.add('active-mode');
+                backBtnPlaceholder.style.display = 'flex';
+                
+                standardCountersBar.style.display = 'none';
+                trashCountersBar.style.display = 'none';
+                videoCountersBar.style.display = 'flex';
+                changeVideoWorkspaceSubView('pending');
+                triggerSmoothSectionAnimation('videoWorkspace');
+                triggerSmoothListAnimation('videoGridContainer');
+            } else {
+                videoContainer.style.display = 'none';
+                normalContainer.style.display = 'block';
+                document.getElementById('mainHeaderTitle').innerText = "All Scripts";
+                navBtn.classList.remove('active-mode');
+                backBtnPlaceholder.style.display = 'none';
+                
+                videoCountersBar.style.display = 'none';
+                trashCountersBar.style.display = 'none';
+                standardCountersBar.style.display = 'flex';
+                changeWorkspaceView(executionViewContext);
+                triggerSmoothSectionAnimation('normalWorkspaceContainer');
+                triggerSmoothListAnimation('gridContainer');
+            }
+        }
+
+        function toggleTrashBinWorkspaceView(activateTrashMode) {
+            if(isManagerMode) exitManagerMode();
+            if(isVideoDashboardMode) toggleVideoProductionDashboardView(false);
+
+            isTrashWorkspaceMode = activateTrashMode;
+            const normalContainer = document.getElementById('normalWorkspaceContainer');
+            const trashContainer = document.getElementById('trashWorkspace');
+            const navBtn = document.getElementById('trashNavBtn');
+            const backBtnPlaceholder = document.getElementById('backBtnPlaceholder');
+            const managerHeaderExitBtn = document.getElementById('managerHeaderExitBtn');
+            if (managerHeaderExitBtn) managerHeaderExitBtn.style.display = 'none';
+
+            const standardCountersBar = document.getElementById('mainStatsBar');
+            const videoCountersBar = document.getElementById('videoStatsBar');
+            const trashCountersBar = document.getElementById('trashStatsBar');
+
+            if (activateTrashMode) {
+                normalContainer.style.display = 'none';
+                trashContainer.style.display = 'block';
+                document.getElementById('mainHeaderTitle').innerText = "All Expired Records";
+                navBtn.classList.add('active-mode');
+                backBtnPlaceholder.style.display = 'flex';
+                
+                standardCountersBar.style.display = 'none';
+                videoCountersBar.style.display = 'none';
+                trashCountersBar.style.display = 'flex';
+                changeTrashWorkspaceSubView('archive');
+                triggerSmoothSectionAnimation('trashWorkspace');
+                triggerSmoothListAnimation('trashGridContainer');
+            } else {
+                trashContainer.style.display = 'none';
+                normalContainer.style.display = 'block';
+                document.getElementById('mainHeaderTitle').innerText = "All Scripts";
+                navBtn.classList.remove('active-mode');
+                backBtnPlaceholder.style.display = 'none';
+                
+                trashCountersBar.style.display = 'none';
+                standardCountersBar.style.display = 'flex';
+                changeWorkspaceView(executionViewContext);
+                triggerSmoothSectionAnimation('normalWorkspaceContainer');
+                triggerSmoothListAnimation('gridContainer');
+            }
+        }
+
+        function triggerGlobalBackToScriptsNavigationRouter() {
+            if (isVideoDashboardMode) toggleVideoProductionDashboardView(false);
+            if (isTrashWorkspaceMode) toggleTrashBinWorkspaceView(false);
+        }
+
+        function changeVideoWorkspaceSubView(subTabContext) {
+            videoViewContext = subTabContext;
+            document.getElementById('tabVideoPending').classList.toggle('active', subTabContext === 'pending');
+            document.getElementById('tabVideoReady').classList.toggle('active', subTabContext === 'ready');
+
+            const label = document.getElementById('videoPanelSectionHeader');
+            label.innerText = (subTabContext === 'pending') ? "Pending Video Logs (Editing Backlog)" : "Ready Video Logs (Finalized Today)";
+            drawVideoProductionDashboardView();
+            triggerSmoothListAnimation('videoGridContainer');
+        }
+
+        function changeTrashWorkspaceSubView(subTabContext) {
+            trashViewContext = subTabContext;
+            document.getElementById('tabTrashArchive').classList.toggle('active', subTabContext === 'archive');
+            document.getElementById('tabTrashVideo').classList.toggle('active', subTabContext === 'video');
+
+            const label = document.getElementById('trashPanelSectionHeader');
+            label.innerText = (subTabContext === 'archive') ? "Auto Expired Archive Log Documents History" : "Auto Expired Video Production History Backlogs";
+            drawTrashBinWorkspaceView();
+            triggerSmoothListAnimation('trashGridContainer');
         }
 
         function changeWorkspaceView(context) {
             executionViewContext = context;
-
             document.getElementById('tabActive').classList.toggle('active', context === 'active');
             document.getElementById('tabReady').classList.toggle('active', context === 'ready');
             document.getElementById('tabCompleted').classList.toggle('active', context === 'completed');
@@ -864,17 +1735,17 @@
                 listHeader.innerText = 'Production Ready Scripts';
             } else {
                 inputSection.style.display = 'none';
-                listHeader.innerText = 'Archive Completed Logs (Strict Read-Only Mode)';
+                listHeader.innerText = 'Archive Completed Logs (Today Only)';
             }
             drawPipelineDashboardView();
+            triggerSmoothSectionAnimation('normalWorkspaceContainer');
+            triggerSmoothListAnimation('gridContainer');
         }
 
-        // --- FULLSCREEN EDITOR ---
-
+        // --- FULL SCREEN STUDIO ACTION EDITOR COMPONENT ---
         function bootStudioOverlay(id) {
             contextualActiveId = id;
             const queryTarget = pipelineDataStore.find(item => item.id === id);
-
             if (!queryTarget) return;
 
             initialTitleCache = queryTarget.title;
@@ -885,11 +1756,10 @@
 
             titleInputField.value = initialTitleCache;
             bodyTextAreaField.value = initialBodyCache;
-
             masterCopyBtn.innerHTML = "📋 Copy Script";
 
-            // STRICT PROTECTION: If in completed stage or deleted state, completely lock modification entry points
-            if (queryTarget.stage === 'completed' || queryTarget.isDeleted) {
+            // ALLOW EDITING IF IN MANAGER MODE, ELSE BLOCK
+            if (!isManagerMode && (queryTarget.stage === 'completed' || queryTarget.isDeleted || queryTarget.isExpired)) {
                 titleInputField.readOnly = true;
                 bodyTextAreaField.readOnly = true;
                 editorSaveBtn.style.display = "none";
@@ -905,67 +1775,45 @@
 
         function executeQuickScriptCopy() {
             const bodyTextAreaField = document.getElementById('fullscreenBody');
-
-            if (!bodyTextAreaField.value) {
-                alert("Nothing inside script workspace text window to copy.");
-                return;
-            }
+            if (!bodyTextAreaField.value) return;
 
             navigator.clipboard.writeText(bodyTextAreaField.value).then(() => {
                 masterCopyBtn.innerHTML = "Copied! ✓";
                 masterCopyBtn.style.backgroundColor = "rgba(16, 185, 129, 0.25)";
-
                 setTimeout(() => {
                     masterCopyBtn.innerHTML = "📋 Copy Script";
                     masterCopyBtn.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
                 }, 2000);
-            }).catch(err => {
-                bodyTextAreaField.select();
-                document.execCommand('copy');
-                masterCopyBtn.innerHTML = "Copied! ✓";
-                setTimeout(() => { masterCopyBtn.innerHTML = "📋 Copy Script"; }, 2000);
             });
         }
 
         function trackEditorStateChanges() {
             const queryTarget = pipelineDataStore.find(item => item.id === contextualActiveId);
-            if (queryTarget && (queryTarget.stage === 'completed' || queryTarget.isDeleted)) return;
+            if (!isManagerMode && queryTarget && (queryTarget.stage === 'completed' || queryTarget.isDeleted || queryTarget.isExpired)) return;
 
             const liveTitle = document.getElementById('fullscreenTitle').value;
             const liveBody = document.getElementById('fullscreenBody').value;
 
-            if (liveTitle !== initialTitleCache || liveBody !== initialBodyCache) {
-                editorSaveBtn.style.display = "block";
-            } else {
-                editorSaveBtn.style.display = "none";
-            }
+            editorSaveBtn.style.display = (liveTitle !== initialTitleCache || liveBody !== initialBodyCache) ? "block" : "none";
         }
 
-        async function saveActiveOverlayEdits() {
+        function saveActiveOverlayEdits() {
             const savedTitle = document.getElementById('fullscreenTitle').value.trim();
             const savedBody = document.getElementById('fullscreenBody').value.trim();
 
-            if (!savedTitle || !savedBody) {
-                alert("Fields cannot be saved completely empty.");
-                return;
-            }
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === contextualActiveId) {
+                    item.title = savedTitle;
+                    item.body = savedBody;
+                }
+                return item;
+            });
 
-            if (!firebaseReady || !contextualActiveId) return;
-
-            try {
-                await scriptsRef.doc(contextualActiveId).update({
-                    title: savedTitle,
-                    body: savedBody,
-                    updatedAt: getServerTimestamp()
-                });
-
-                initialTitleCache = savedTitle;
-                initialBodyCache = savedBody;
-                editorSaveBtn.style.display = "none";
-            } catch (error) {
-                console.error("Save edit error:", error);
-                alert("Save changes failed.");
-            }
+            saveDemoDataStateSnapshot();
+            initialTitleCache = savedTitle;
+            initialBodyCache = savedBody;
+            editorSaveBtn.style.display = "none";
+            syncPipelineInfrastructure();
         }
 
         function verifyExitSequence() {
@@ -988,8 +1836,8 @@
             }
         }
 
-        async function commitAndCloseOverlay() {
-            await saveActiveOverlayEdits();
+        function commitAndCloseOverlay() {
+            saveActiveOverlayEdits();
             dismissModalOverlay();
             terminateStudioWorkspaceWithoutSaving();
         }
@@ -999,16 +1847,8 @@
             editorOverlay.style.display = "none";
             document.body.style.overflow = "auto";
             contextualActiveId = null;
-            if (isManagerMode) {
-                if(managerViewContext === 'analytics') renderManagerAnalytics();
-                else if(managerViewContext === 'lists') renderConfigManagementLists();
-                else renderManagerLists();
-            } else {
-                drawPipelineDashboardView();
-            }
+            syncPipelineInfrastructure();
         }
-
-        // --- MODAL UTILITY ---
 
         function showModalDialogue(title, description, inputHtml, buttonHtml) {
             document.getElementById('modalTitle').innerText = title;
@@ -1023,13 +1863,12 @@
             document.getElementById('modalInputContainer').innerHTML = "";
         }
 
-        // --- MANAGER PANEL ENGINE ---
-
+        // --- ADMINISTRATIVE MANAGER SYSTEM CONTROL PROCEDURES ---
         function showPasswordModal() {
             showModalDialogue(
-                "Manager Access Required",
-                "Please enter the master password to access the Manager Panel.",
-                `<input type="password" id="managerPwd" class="input-control" placeholder="Enter password...">`,
+                "Manager Panel Login Required",
+                "Please enter the master credential password string to authorize manager interface loop access.",
+                `<input type="password" id="managerPwd" class="input-control" placeholder="Enter security key...">`,
                 `
                 <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
                 <button class="btn-alert btn-confirm-save" onclick="verifyManagerPassword()">Login</button>
@@ -1049,14 +1888,22 @@
 
         function enterManagerMode() {
             isManagerMode = true;
+            if(isVideoDashboardMode) toggleVideoProductionDashboardView(false);
+            if(isTrashWorkspaceMode) toggleTrashBinWorkspaceView(false);
+
             document.getElementById('normalWorkspaceContainer').style.display = 'none';
             document.getElementById('mainStatsBar').style.display = 'none';
+            document.getElementById('trashStatsBar').style.display = 'none';
             document.getElementById('mainHeaderTitle').innerText = "Manager Dashboard";
             document.getElementById('managerWorkspace').style.display = 'block';
-            document.querySelector('.manager-btn-top').style.display = 'none';
+            document.querySelector('.header-action-container').style.display = 'flex';
+            document.getElementById('headerButtonsRow').style.display = 'none';
+            document.getElementById('backBtnPlaceholder').style.display = 'none';
+            document.getElementById('managerHeaderExitBtn').style.display = 'inline-block';
 
             document.getElementById('analyticsDate').valueAsDate = new Date();
             changeManagerView('analytics');
+            triggerSmoothSectionAnimation('managerWorkspace');
         }
 
         function exitManagerMode() {
@@ -1065,112 +1912,407 @@
             document.getElementById('normalWorkspaceContainer').style.display = 'block';
             document.getElementById('mainStatsBar').style.display = 'flex';
             document.getElementById('mainHeaderTitle').innerText = "All Scripts";
-            document.querySelector('.manager-btn-top').style.display = 'block';
-
+            
+            document.querySelector('.header-action-container').style.display = 'flex';
+            document.getElementById('headerButtonsRow').style.display = 'flex';
+            document.getElementById('managerHeaderExitBtn').style.display = 'none';
+            document.getElementById('backBtnPlaceholder').style.display = 'none';
             syncPipelineInfrastructure();
+            triggerSmoothSectionAnimation('normalWorkspaceContainer');
+            triggerSmoothListAnimation('gridContainer');
         }
 
         function changeManagerView(view) {
             managerViewContext = view;
-
             document.getElementById('tabManagerAnalytics').classList.toggle('active', view === 'analytics');
-            document.getElementById('tabManagerAll').classList.toggle('active', view === 'all');
+            document.getElementById('tabManagerEmployee').classList.toggle('active', view === 'employee');
             document.getElementById('tabManagerLists').classList.toggle('active', view === 'lists');
             document.getElementById('tabManagerTrash').classList.toggle('active', view === 'trash');
 
             const analyticsSec = document.getElementById('managerAnalyticsSection');
-            const listSec = document.getElementById('managerListSection');
+            const employeeSec = document.getElementById('managerEmployeeUpdateSection');
             const configDropdownsSec = document.getElementById('managerDropdownsConfigSection');
+            const listSec = document.getElementById('managerListSection');
+            const subTabsWrapper = document.getElementById('managerTrashSubTabsWrapper');
 
             if (view === 'analytics') {
                 analyticsSec.style.display = 'block';
+                employeeSec.style.display = 'none';
                 listSec.style.display = 'none';
                 configDropdownsSec.style.display = 'none';
+                subTabsWrapper.style.display = 'none';
                 renderManagerAnalytics();
+                triggerSmoothSectionAnimation('managerAnalyticsSection');
+                triggerSmoothListAnimation('analyticsGridContainer');
+            } else if (view === 'employee') {
+                analyticsSec.style.display = 'none';
+                employeeSec.style.display = 'block';
+                listSec.style.display = 'none';
+                configDropdownsSec.style.display = 'none';
+                subTabsWrapper.style.display = 'none';
+                prepareEmployeeUpdateControls();
+                renderEmployeeUpdateReport();
+                triggerSmoothSectionAnimation('managerEmployeeUpdateSection');
+                triggerSmoothListAnimation('employeeReportGridContainer');
             } else if (view === 'lists') {
                 analyticsSec.style.display = 'none';
+                employeeSec.style.display = 'none';
                 listSec.style.display = 'none';
                 configDropdownsSec.style.display = 'block';
+                subTabsWrapper.style.display = 'none';
                 renderConfigManagementLists();
-            } else if (view === 'all') {
-                analyticsSec.style.display = 'none';
-                configDropdownsSec.style.display = 'none';
-                listSec.style.display = 'block';
-                document.getElementById('managerListTitle').innerText = "All Active & Archived Scripts (Control View)";
-                renderManagerLists();
+                triggerSmoothSectionAnimation('managerDropdownsConfigSection');
             } else if (view === 'trash') {
                 analyticsSec.style.display = 'none';
+                employeeSec.style.display = 'none';
                 configDropdownsSec.style.display = 'none';
                 listSec.style.display = 'block';
-                document.getElementById('managerListTitle').innerText = "Trash Bin (Deleted Scripts)";
-                renderManagerLists();
+                subTabsWrapper.style.display = 'flex';
+                changeManagerTrashSubView(managerTrashSubContext);
+                triggerSmoothSectionAnimation('managerListSection');
+                triggerSmoothListAnimation('managerGridContainer');
             }
         }
 
-        // Config lists management implementation
+        function changeManagerTrashSubView(subContext) {
+            managerTrashSubContext = subContext;
+            document.getElementById('subTabMgtTrash').classList.toggle('active', subContext === 'trash');
+            document.getElementById('subTabMgtArchive').classList.toggle('active', subContext === 'archive');
+            document.getElementById('subTabMgtVideo').classList.toggle('active', subContext === 'video');
+            document.getElementById('subTabMgtGlobal').classList.toggle('active', subContext === 'global');
+
+            renderManagerTrashLists(subContext);
+            triggerSmoothListAnimation('managerGridContainer');
+        }
+
         function renderConfigManagementLists() {
             const pList = document.getElementById('mgrProductList');
             const mList = document.getElementById('mgrMemberList');
 
-            pList.innerHTML = appConfigStore.products.map(p => `
-                <div class="list-item-row"><span>${escapeHTML(p)}</span><button class="btn-mini-del" onclick="deleteConfigItem('products', '${escapeJSString(p)}')">×</button></div>
-            `).join('');
+            pList.innerHTML = appConfigStore.products.map(p => {
+                const colorValue = appConfigStore.productColors[p] || '#3b82f6';
+                return `
+                    <div class="config-row-item">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" value="${colorValue}" onchange="updateConfigInlineProperties('products', '${escapeJSString(p)}', this.value, 'color')" class="color-picker-input">
+                            <input type="text" value="${escapeAttr(p)}" onchange="updateConfigInlineProperties('products', '${escapeJSString(p)}', this.value, 'name')" class="input-control" style="padding:4px 8px; font-weight:600; width:150px;">
+                        </div>
+                        <button class="btn-mini-del" onclick="deleteConfigItem('products', '${escapeJSString(p)}')">×</button>
+                    </div>`;
+            }).join('');
 
-            mList.innerHTML = appConfigStore.members.map(m => `
-                <div class="list-item-row"><span>${escapeHTML(m)}</span><button class="btn-mini-del" onclick="deleteConfigItem('members', '${escapeJSString(m)}')">×</button></div>
-            `).join('');
+            mList.innerHTML = appConfigStore.members.map(m => {
+                const colorValue = appConfigStore.memberColors[m] || '#f59e0b';
+                return `
+                    <div class="config-row-item">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="color" value="${colorValue}" onchange="updateConfigInlineProperties('members', '${escapeJSString(m)}', this.value, 'color')" class="color-picker-input">
+                            <input type="text" value="${escapeAttr(m)}" onchange="updateConfigInlineProperties('members', '${escapeJSString(m)}', this.value, 'name')" class="input-control" style="padding:4px 8px; font-weight:600; width:150px;">
+                        </div>
+                        <button class="btn-mini-del" onclick="deleteConfigItem('members', '${escapeJSString(m)}')">×</button>
+                    </div>`;
+            }).join('');
         }
 
-        async function addNewConfigItem(type, inputId) {
+        function updateConfigInlineProperties(type, oldValue, newValue, attributeFieldType) {
+            if(attributeFieldType === 'color') {
+                if(type === 'products') appConfigStore.productColors[oldValue] = newValue;
+                else appConfigStore.memberColors[oldValue] = newValue;
+            } else {
+                const cleanedVal = newValue.trim();
+                if(!cleanedVal || cleanedVal === oldValue) return;
+                if(appConfigStore[type].includes(cleanedVal)) { alert("Already exists!"); renderConfigManagementLists(); return; }
+
+                appConfigStore[type] = appConfigStore[type].map(item => item === oldValue ? cleanedVal : item);
+                if(type === 'products') {
+                    appConfigStore.productColors[cleanedVal] = appConfigStore.productColors[oldValue]; delete appConfigStore.productColors[oldValue];
+                    pipelineDataStore = pipelineDataStore.map(i => { if(i.assignedProduct === oldValue) i.assignedProduct = cleanedVal; return i; });
+                } else {
+                    appConfigStore.memberColors[cleanedVal] = appConfigStore.memberColors[oldValue]; delete appConfigStore.memberColors[oldValue];
+                    pipelineDataStore = pipelineDataStore.map(i => { if(i.assignedMember === oldValue) i.assignedMember = cleanedVal; return i; });
+                }
+            }
+            saveDemoDataStateSnapshot();
+            renderConfigManagementLists();
+            synchronizeDropdownFilteringMenus();
+        }
+
+        function addNewConfigItem(type, inputId, colorInputId) {
             const input = document.getElementById(inputId);
+            const colorInput = document.getElementById(colorInputId);
             const val = input.value.trim();
             if(!val) return;
 
-            if(appConfigStore[type].includes(val)){
-                alert("Value already exists.");
+            if(appConfigStore[type].includes(val)){ alert("Value already exists."); return; }
+
+            appConfigStore[type].push(val);
+            if(type === 'products') appConfigStore.productColors[val] = colorInput.value;
+            else appConfigStore.memberColors[val] = colorInput.value;
+
+            saveDemoDataStateSnapshot();
+            input.value = '';
+            renderConfigManagementLists();
+            synchronizeDropdownFilteringMenus();
+        }
+
+        function deleteConfigItem(type, value) {
+            appConfigStore[type] = appConfigStore[type].filter(item => item !== value);
+            if(type === 'products') delete appConfigStore.productColors[value];
+            else delete appConfigStore.memberColors[value];
+
+            saveDemoDataStateSnapshot();
+            renderConfigManagementLists();
+            synchronizeDropdownFilteringMenus();
+        }
+
+        function parseDateOnlyFromTimestamp(timestampValue) {
+            if (!timestampValue) return null;
+            const rawDatePart = String(timestampValue).split(',')[0].trim();
+            const pieces = rawDatePart.split('/');
+            if (pieces.length !== 3) return null;
+            const day = Number(pieces[0]);
+            const month = Number(pieces[1]);
+            const year = Number(pieces[2]);
+            if (!day || !month || !year) return null;
+            return new Date(year, month - 1, day);
+        }
+
+        function parseInputDateToLocalDate(inputValue) {
+            if (!inputValue) return null;
+            const parts = inputValue.split('-');
+            if (parts.length !== 3) return null;
+            return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        }
+
+        function isDateWithinEmployeeRange(timestampValue, startInput, endInput) {
+            const targetDate = parseDateOnlyFromTimestamp(timestampValue);
+            const startDate = parseInputDateToLocalDate(startInput);
+            const endDate = parseInputDateToLocalDate(endInput || startInput);
+            if (!targetDate || !startDate || !endDate) return false;
+            const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+            const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+            const targetDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate()).getTime();
+            return targetDay >= Math.min(startDay, endDay) && targetDay <= Math.max(startDay, endDay);
+        }
+
+        function durationStringToSeconds(durationValue) {
+            if (!durationValue) return 0;
+            const parts = String(durationValue).split(':').map(n => Number(n));
+            if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) return 0;
+            return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+        }
+
+        function secondsToDurationString(totalSecondsValue) {
+            let totalSeconds = Math.max(0, Math.floor(totalSecondsValue || 0));
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function prepareEmployeeUpdateControls() {
+            const startInput = document.getElementById('employeeStartDate');
+            const endInput = document.getElementById('employeeEndDate');
+            if (startInput && !startInput.value) startInput.valueAsDate = new Date();
+            if (endInput && !endInput.value) endInput.valueAsDate = new Date();
+
+            const memberFilter = document.getElementById('employeeMemberFilter');
+            const productFilter = document.getElementById('employeeProductFilter');
+            const cachedMember = memberFilter ? memberFilter.value : 'all';
+            const cachedProduct = productFilter ? productFilter.value : 'all';
+
+            if (memberFilter) {
+                memberFilter.innerHTML = '<option value="all">All Employees</option>' + appConfigStore.members.map(m => `<option value="${escapeAttr(m)}">${escapeHTML(m)}</option>`).join('');
+                if (appConfigStore.members.includes(cachedMember)) memberFilter.value = cachedMember;
+            }
+            if (productFilter) {
+                productFilter.innerHTML = '<option value="all">All Products</option>' + appConfigStore.products.map(p => `<option value="${escapeAttr(p)}">${escapeHTML(p)}</option>`).join('');
+                if (appConfigStore.products.includes(cachedProduct)) productFilter.value = cachedProduct;
+            }
+        }
+
+        function getEmployeeUpdateFilteredVideos() {
+            const startDateValue = document.getElementById('employeeStartDate').value;
+            const endDateValue = document.getElementById('employeeEndDate').value || startDateValue;
+            const memberValue = document.getElementById('employeeMemberFilter').value;
+            const productValue = document.getElementById('employeeProductFilter').value;
+
+            return pipelineDataStore.filter(item => {
+                if (item.isDeleted || item.videoLogPurged) return false;
+                if (item.stage !== 'completed' || item.videoStage !== 'ready') return false;
+                if (!isDateWithinEmployeeRange(item.videoCreatedTimestamp, startDateValue, endDateValue)) return false;
+                if (memberValue !== 'all' && item.assignedMember !== memberValue) return false;
+                if (productValue !== 'all' && item.assignedProduct !== productValue) return false;
+                return true;
+            });
+        }
+
+        function setEmployeeReportMode(mode) {
+            employeeReportContext = mode;
+            const modeSelect = document.getElementById('employeeReportMode');
+            if (modeSelect) modeSelect.value = mode;
+
+            const productBtn = document.getElementById('empModeProduct');
+            const employeeBtn = document.getElementById('empModeEmployee');
+            const scriptsBtn = document.getElementById('empModeScripts');
+            if (productBtn) productBtn.classList.toggle('active', mode === 'product');
+            if (employeeBtn) employeeBtn.classList.toggle('active', mode === 'employee');
+            if (scriptsBtn) scriptsBtn.classList.toggle('active', mode === 'scripts');
+
+            renderEmployeeUpdateReport();
+        }
+
+        function renderEmployeeUpdateReport() {
+            const grid = document.getElementById('employeeUpdateGridContainer');
+            if (!grid) return;
+            prepareEmployeeUpdateControls();
+
+            const reportModeSelect = document.getElementById('employeeReportMode');
+            const reportMode = reportModeSelect ? reportModeSelect.value : employeeReportContext;
+            employeeReportContext = reportMode;
+
+            const productBtn = document.getElementById('empModeProduct');
+            const employeeBtn = document.getElementById('empModeEmployee');
+            const scriptsBtn = document.getElementById('empModeScripts');
+            if (productBtn) productBtn.classList.toggle('active', reportMode === 'product');
+            if (employeeBtn) employeeBtn.classList.toggle('active', reportMode === 'employee');
+            if (scriptsBtn) scriptsBtn.classList.toggle('active', reportMode === 'scripts');
+
+            const dataset = getEmployeeUpdateFilteredVideos();
+            const totalSeconds = dataset.reduce((sum, item) => sum + durationStringToSeconds(item.totalElapsedTimeFormatted), 0);
+            const uniqueMembers = new Set(dataset.map(item => item.assignedMember || 'None'));
+
+            document.getElementById('empTotalVideos').innerText = dataset.length;
+            document.getElementById('empTotalTime').innerText = secondsToDurationString(totalSeconds);
+            document.getElementById('empTotalPeople').innerText = uniqueMembers.size;
+
+            grid.innerHTML = '';
+            if (dataset.length === 0) {
+                grid.innerHTML = `<div class="empty-status-text">No ready video records found for selected date/filter range.</div>`;
                 return;
             }
 
-            if (!firebaseReady) return;
+            const memberSummary = {};
+            const productSummary = {};
+            dataset.forEach(item => {
+                const member = item.assignedMember || 'None';
+                const product = item.assignedProduct || 'None';
+                const sec = durationStringToSeconds(item.totalElapsedTimeFormatted);
 
-            const updatedConfig = {
-                ...appConfigStore,
-                [type]: [...appConfigStore[type], val],
-                updatedAt: getServerTimestamp()
-            };
+                if (!memberSummary[member]) memberSummary[member] = { count: 0, seconds: 0, products: {}, scripts: [] };
+                memberSummary[member].count += 1;
+                memberSummary[member].seconds += sec;
+                memberSummary[member].products[product] = memberSummary[member].products[product] || { count: 0, seconds: 0 };
+                memberSummary[member].products[product].count += 1;
+                memberSummary[member].products[product].seconds += sec;
+                memberSummary[member].scripts.push(item);
 
-            try {
-                await configRef.set(updatedConfig, { merge: true });
-                input.value = '';
-            } catch (error) {
-                console.error("Add config item error:", error);
-                alert("Dropdown item save failed.");
+                if (!productSummary[product]) productSummary[product] = { count: 0, seconds: 0, members: {}, scripts: [] };
+                productSummary[product].count += 1;
+                productSummary[product].seconds += sec;
+                productSummary[product].members[member] = productSummary[product].members[member] || { count: 0, seconds: 0 };
+                productSummary[product].members[member].count += 1;
+                productSummary[product].members[member].seconds += sec;
+                productSummary[product].scripts.push(item);
+            });
+
+            if (reportMode === 'scripts') {
+                document.getElementById('employeeUpdateListHeader').innerText = 'Script Details: Who Did Which Script';
+                dataset.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'script-row';
+                    const safeId = escapeJSString(item.id);
+                    const productColor = appConfigStore.productColors[item.assignedProduct] || '#3b82f6';
+                    const memberColor = appConfigStore.memberColors[item.assignedMember] || '#10b981';
+                    row.innerHTML = `
+                        <div class="row-details">
+                            <div class="meta-time">🎬 Ready: ${escapeHTML(item.videoCreatedTimestamp || 'N/A')} | ⏱️ Editing Time: <strong>${escapeHTML(item.totalElapsedTimeFormatted || '00:00:00')}</strong></div>
+                            <div class="row-title">${escapeHTML(item.title)}</div>
+                            <div style="margin: 5px 0; display:flex; gap:6px; flex-wrap:wrap;">
+                                <span class="custom-render-badge" style="background: rgba(16,185,129,0.05); color:${productColor}; border:1px solid ${productColor}26;">📦 ${escapeHTML(item.assignedProduct || 'None')}</span>
+                                <span class="custom-render-badge" style="background: rgba(59,130,246,0.05); color:${memberColor}; border:1px solid ${memberColor}26;">👤 ${escapeHTML(item.assignedMember || 'None')}</span>
+                            </div>
+                            <div class="row-snippet" style="margin-top:2px;">${escapeHTML(item.body)}</div>
+                        </div>
+                        <div class="row-buttons"><button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View / Modify</button></div>
+                    `;
+                    grid.appendChild(row);
+                });
+                return;
             }
+
+            if (reportMode === 'employee') {
+                document.getElementById('employeeUpdateListHeader').innerText = 'Employee Wise Video Report';
+                Object.keys(memberSummary).sort().forEach(member => {
+                    const info = memberSummary[member];
+                    const memberColor = appConfigStore.memberColors[member] || '#10b981';
+                    const productLines = Object.entries(info.products).sort().map(([product, pInfo]) => {
+                        return `<div style="font-size:12px; color:#475569; margin-top:3px;">📦 <strong>${escapeHTML(product)}</strong>: ${pInfo.count} video | ⏱️ ${secondsToDurationString(pInfo.seconds)}</div>`;
+                    }).join('');
+                    const row = document.createElement('div');
+                    row.className = 'script-row';
+                    row.innerHTML = `
+                        <div class="row-details">
+                            <div class="meta-time">Employee Performance Summary</div>
+                            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px;">
+                                <div class="row-title" style="color:${memberColor}; margin-bottom:0; font-size:19px;">👤 ${escapeHTML(member)}</div>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                    <span style="font-size:16px; font-weight:900; color:var(--primary-dark); background:#eef6ff; border:1px solid #bfdbfe; padding:6px 12px; border-radius:8px;">🎬 ${info.count} Videos</span>
+                                    <span style="font-size:16px; font-weight:900; color:var(--primary-dark); background:#f0fdf4; border:1px solid #bbf7d0; padding:6px 12px; border-radius:8px;">⏱️ ${secondsToDurationString(info.seconds)}</span>
+                                </div>
+                            </div>
+                            <div style="margin-top:7px; background:#f8fafc; border:1px solid #e2e8f0; padding:8px 10px; border-radius:7px;">
+                                ${productLines}
+                            </div>
+                        </div>
+                        <div class="row-buttons"><button class="btn-pro btn-view" onclick="document.getElementById('employeeReportMode').value='scripts'; document.getElementById('employeeMemberFilter').value='${escapeAttr(member)}'; setEmployeeReportMode('scripts');">View Scripts</button></div>
+                    `;
+                    grid.appendChild(row);
+                });
+                return;
+            }
+
+            document.getElementById('employeeUpdateListHeader').innerText = 'Product Wise Video Report';
+            Object.keys(productSummary).sort().forEach(product => {
+                const info = productSummary[product];
+                const productColor = appConfigStore.productColors[product] || '#3b82f6';
+                const memberLines = Object.entries(info.members).sort().map(([member, mInfo]) => {
+                    const mColor = appConfigStore.memberColors[member] || '#10b981';
+                    return `<div style="font-size:12px; color:#475569; margin-top:3px;">👤 <strong style="color:${mColor};">${escapeHTML(member)}</strong>: ${mInfo.count} video | ⏱️ ${secondsToDurationString(mInfo.seconds)}</div>`;
+                }).join('');
+                const row = document.createElement('div');
+                row.className = 'script-row';
+                row.innerHTML = `
+                    <div class="row-details">
+                        <div class="meta-time">Product Performance Summary</div>
+                        <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:8px;">
+                            <div class="row-title" style="color:${productColor}; margin-bottom:0; font-size:19px;">📦 ${escapeHTML(product)}</div>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                <span style="font-size:16px; font-weight:900; color:var(--primary-dark); background:#eef6ff; border:1px solid #bfdbfe; padding:6px 12px; border-radius:8px;">🎬 ${info.count} Videos</span>
+                                <span style="font-size:16px; font-weight:900; color:var(--primary-dark); background:#f0fdf4; border:1px solid #bbf7d0; padding:6px 12px; border-radius:8px;">⏱️ ${secondsToDurationString(info.seconds)}</span>
+                            </div>
+                        </div>
+                        <div style="margin-top:7px; background:#f8fafc; border:1px solid #e2e8f0; padding:8px 10px; border-radius:7px;">
+                            ${memberLines}
+                        </div>
+                    </div>
+                    <div class="row-buttons"><button class="btn-pro btn-view" onclick="document.getElementById('employeeReportMode').value='scripts'; document.getElementById('employeeProductFilter').value='${escapeAttr(product)}'; setEmployeeReportMode('scripts');">View Scripts</button></div>
+                `;
+                grid.appendChild(row);
+            });
         }
 
-        async function deleteConfigItem(type, value) {
-            if (!firebaseReady) return;
-
-            const updatedConfig = {
-                ...appConfigStore,
-                [type]: appConfigStore[type].filter(item => item !== value),
-                updatedAt: getServerTimestamp()
-            };
-
-            try {
-                await configRef.set(updatedConfig, { merge: true });
-            } catch (error) {
-                console.error("Delete config item error:", error);
-                alert("Dropdown item delete failed.");
-            }
-        }
-
-        function getStageColor(stage, isDeleted) {
-            if (isDeleted) return "var(--accent-red)";
-            if (stage === 'pending') return "var(--accent-orange)";
-            if (stage === 'ready') return "var(--accent-blue)";
-            if (stage === 'completed') return "var(--accent-green)";
-            return "var(--text-dark)";
+        function setAnalyticsDrillDownFilter(category) {
+            drillDownAnalyticsContext = category;
+            
+            document.querySelectorAll('.analytics-card').forEach(card => card.classList.remove('active-card-filter'));
+            
+            if(category === 'created') document.getElementById('cardFilterCreated').classList.add('active-card-filter');
+            if(category === 'ready') document.getElementById('cardFilterReady').classList.add('active-card-filter');
+            if(category === 'done') document.getElementById('cardFilterDone').classList.add('active-card-filter');
+            if(category === 'video') document.getElementById('cardFilterVideo').classList.add('active-card-filter');
+            
+            renderManagerAnalytics();
         }
 
         function renderManagerAnalytics() {
@@ -1183,195 +2325,206 @@
             let countCreated = 0;
             let countReadied = 0;
             let countDone = 0;
+            let countVideo = 0;
 
-            const analyticsGrid = document.getElementById('analyticsGridContainer');
-            analyticsGrid.innerHTML = '';
-
-            let eventsForDate = [];
+            let filteredCreatedList = [];
+            let filteredReadiedList = [];
+            let filteredDoneList = [];
+            let filteredVideoList = [];
 
             pipelineDataStore.forEach(item => {
-                let matched = false;
-                let eventText = [];
-
-                if (getDateMatchString(item.createdAt, item.createdTimestamp).includes(formattedDateMatch)) {
-                    countCreated++;
-                    eventText.push("Created");
-                    matched = true;
+                if (item.createdTimestamp && item.createdTimestamp.includes(formattedDateMatch)) { 
+                    countCreated++; 
+                    filteredCreatedList.push(item);
                 }
-                if (getDateMatchString(item.readyAt, item.readyTimestamp).includes(formattedDateMatch)) {
-                    countReadied++;
-                    eventText.push("Pushed to Ready");
-                    matched = true;
+                if (item.readyTimestamp && item.readyTimestamp.includes(formattedDateMatch)) { 
+                    countReadied++; 
+                    filteredReadiedList.push(item);
                 }
-                if (getDateMatchString(item.completedAt, item.completedTimestamp).includes(formattedDateMatch)) {
-                    countDone++;
-                    eventText.push("Marked Done");
-                    matched = true;
+                if (item.completedTimestamp && item.completedTimestamp.includes(formattedDateMatch)) { 
+                    countDone++; 
+                    filteredDoneList.push(item);
                 }
-
-                if (matched) {
-                    eventsForDate.push({
-                        item: item,
-                        eventStr: eventText.join(" & ")
-                    });
+                if (item.videoCreatedTimestamp && item.videoCreatedTimestamp.includes(formattedDateMatch)) {
+                    countVideo++;
+                    filteredVideoList.push(item);
                 }
             });
 
             document.getElementById('statCreated').innerText = countCreated;
             document.getElementById('statReadied').innerText = countReadied;
             document.getElementById('statDone').innerText = countDone;
+            document.getElementById('statVideo').innerText = countVideo;
 
-            if (eventsForDate.length === 0) {
-                analyticsGrid.innerHTML = `<div class="empty-status-text">No script activities recorded on ${escapeHTML(formattedDateMatch)}.</div>`;
+            const grid = document.getElementById('analyticsGridContainer');
+            grid.innerHTML = '';
+
+            let activeRenderDataset = [];
+            if(drillDownAnalyticsContext === 'created') activeRenderDataset = filteredCreatedList;
+            else if(drillDownAnalyticsContext === 'ready') activeRenderDataset = filteredReadiedList;
+            else if(drillDownAnalyticsContext === 'done') activeRenderDataset = filteredDoneList;
+            else if(drillDownAnalyticsContext === 'video') activeRenderDataset = filteredVideoList;
+
+            if (activeRenderDataset.length === 0) {
+                grid.innerHTML = `<div class="empty-status-text">No records active for query category choice on selected date.</div>`;
                 return;
             }
 
-            eventsForDate.forEach(record => {
-                const item = record.item;
+            activeRenderDataset.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'script-row';
                 const safeId = escapeJSString(item.id);
 
-                let statusText = item.isDeleted ? 'TRASH' : String(item.stage || '').toUpperCase();
-                let statusColor = getStageColor(item.stage, item.isDeleted);
-
                 let extraInfo = '';
                 if(item.stage === 'completed') {
-                    extraInfo = `<div style="font-size:12px; color:#64748b; margin-top:2px;">📦 Product: ${escapeHTML(item.assignedProduct || 'None')} | 👤 Member: ${escapeHTML(item.assignedMember || 'None')}</div>`;
+                    const extraEditorField = item.assignedMember || 'None';
+                    const extraProductField = item.assignedProduct || 'None';
+                    extraInfo = `
+                        <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                            📦 Product: <strong style="color:var(--accent-blue)">${escapeHTML(extraProductField)}</strong> | 👤 Given to Editor: <strong style="color:var(--accent-green)">${escapeHTML(extraEditorField)}</strong>
+                        </div>`;
+                    if (item.videoStage === 'ready') {
+                        extraInfo += `
+                            <div style="font-size:11px; color:var(--accent-orange); margin-top:1px;">
+                                ⏱️ Editing Run duration: <strong>${escapeHTML(item.totalElapsedTimeFormatted || '00:00:00')}</strong>
+                            </div>`;
+                    }
                 }
 
                 row.innerHTML = `
                     <div class="row-details">
-                        <div class="meta-time">Status: <strong style="color: ${statusColor}; font-weight: 800;">${escapeHTML(statusText)}</strong> | Event(s) on Date: <strong style="color:var(--accent-blue)">${escapeHTML(record.eventStr)}</strong></div>
+                        <div class="meta-time">ID Key Ref: ${escapeHTML(item.id)} | Stage: <strong>${String(item.stage).toUpperCase()}</strong></div>
                         <div class="row-title">${escapeHTML(item.title)}</div>
                         ${extraInfo}
                         <div class="row-snippet" style="margin-top:2px;">${escapeHTML(item.body)}</div>
                     </div>
-                    <div class="row-buttons">
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
-                    </div>
+                    <div class="row-buttons"><button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View / Modify</button></div>
                 `;
-                analyticsGrid.appendChild(row);
+                grid.appendChild(row);
             });
         }
 
-        function renderManagerLists() {
+        function renderManagerTrashLists(viewContext) {
             const grid = document.getElementById('managerGridContainer');
+            const titleEl = document.getElementById('managerListTitle');
             grid.innerHTML = '';
 
-            let targetList = [];
+            let dataset = [];
 
-            if (managerViewContext === 'all') {
-                targetList = pipelineDataStore.filter(i => !i.isDeleted);
-            } else if (managerViewContext === 'trash') {
-                targetList = pipelineDataStore.filter(i => i.isDeleted);
+            if (viewContext === 'trash') {
+                titleEl.innerText = "Manager Inner Node: Manual Trash Vault Ledger";
+                dataset = pipelineDataStore.filter(i => i.isDeleted);
+            } else if (viewContext === 'archive') {
+                titleEl.innerText = "Manager Inner Node: System Active Archive Logs";
+                dataset = pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && !i.archiveLogPurged && i.stage === 'completed');
+            } else if (viewContext === 'video') {
+                titleEl.innerText = "Manager Inner Node: Production Ready Video Core Logs";
+                dataset = pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && !i.videoLogPurged && i.stage === 'completed' && i.videoStage === 'ready');
+            } else if (viewContext === 'global') {
+                titleEl.innerText = "Manager Inner Node: Global Expiration Automated Trash Vault";
+                dataset = pipelineDataStore.filter(i => i.isExpired);
             }
 
-            if (targetList.length === 0) {
-                grid.innerHTML = `<div class="empty-status-text">No scripts found in this category.</div>`;
+            if (dataset.length === 0) {
+                grid.innerHTML = `<div class="empty-status-text">No records matched loop constraints metrics bounds inside this configuration layer.</div>`;
                 return;
             }
 
-            targetList.forEach(item => {
+            dataset.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'script-row';
                 const safeId = escapeJSString(item.id);
+                
+                let extraInfo = `
+                    <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                        Status State Flag: <strong>${item.isDeleted ? 'Deleted (Manual)' : (item.isExpired ? 'Expired (Auto 24h)' : 'Active System Asset')}</strong>
+                        | Influx Time Inbound: ${escapeHTML(item.createdTimestamp || 'N/A')}
+                    </div>`;
 
-                let stamp = formatDisplayTime(item.createdAt, item.createdTimestamp);
-                if(item.isDeleted) stamp = `Deleted on: ${formatDisplayTime(item.deletedAt, item.deletedTimestamp)}`;
-                else if (item.stage === 'completed') stamp = `Finished: ${formatDisplayTime(item.completedAt, item.completedTimestamp || item.createdTimestamp)}`;
-                else if (item.stage === 'ready') stamp = `Ready since: ${formatDisplayTime(item.readyAt, item.readyTimestamp || item.createdTimestamp)}`;
-
-                let actionButtons = `<button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>`;
-
-                if (managerViewContext === 'all') {
-                    // Manager retains administrative control to wipe anything into trash pipeline
-                    actionButtons += `<button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${safeId}')">Delete</button>`;
-                } else if (managerViewContext === 'trash') {
-                    actionButtons += `
-                        <button class="btn-pro btn-restore" onclick="restoreScript('${safeId}')">♻️ Restore</button>
-                        <button class="btn-pro btn-delete" onclick="triggerPermanentDeleteVerification('${safeId}')">Permanent Delete</button>
-                    `;
-                }
-
-                let statusText = item.isDeleted ? 'TRASH' : String(item.stage || '').toUpperCase();
-                let statusColor = getStageColor(item.stage, item.isDeleted);
-
-                let extraInfo = '';
-                if(item.stage === 'completed') {
-                    extraInfo = `<div style="font-size:12px; color:#64748b; margin-top:2px;">📦 Product: ${escapeHTML(item.assignedProduct || 'None')} | 👤 Member: ${escapeHTML(item.assignedMember || 'None')}</div>`;
+                let restoreBtn = '';
+                if (viewContext === 'trash' || viewContext === 'global') {
+                    restoreBtn = `<button class="btn-pro btn-restore" onclick="executeAuthenticatedRestoreAction('${safeId}')">♻ Restore</button>`;
                 }
 
                 row.innerHTML = `
                     <div class="row-details">
-                        <div class="meta-time">⏱️ ${escapeHTML(stamp)} | Stage: <strong style="color: ${statusColor}; font-weight: 800;">${escapeHTML(statusText)}</strong></div>
+                        <div class="meta-time">ID Reference Key: ${escapeHTML(item.id)}</div>
                         <div class="row-title">${escapeHTML(item.title)}</div>
                         ${extraInfo}
                         <div class="row-snippet" style="margin-top:2px;">${escapeHTML(item.body)}</div>
                     </div>
                     <div class="row-buttons">
-                        ${actionButtons}
+                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">Modify / View</button>
+                        ${restoreBtn}
+                        <button class="btn-pro btn-delete" onclick="executeAuthenticatedPermanentWipeAction('${safeId}', '${escapeJSString(viewContext)}')">Purge Forever</button>
                     </div>
                 `;
                 grid.appendChild(row);
             });
         }
 
-        // RESTORE SCRIPT
-        async function restoreScript(id) {
-            if (!firebaseReady) return;
+        function executeAuthenticatedRestoreAction(id) {
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === id) {
+                    item.isDeleted = false;
+                    item.deletedTimestamp = null;
+                    if (item.isExpired) {
+                        item.isExpired = false;
+                        item.expiredTimestamp = null;
+                        item.expiredFromContext = null;
+                        
+                        // Prevent instant re-expiration by resetting timestamps to current day
+                        const todayTS = getCurrentTimestamp();
+                        if (item.stage === 'completed' && item.videoStage !== 'ready') {
+                            item.completedTimestamp = todayTS;
+                        } else if (item.stage === 'completed' && item.videoStage === 'ready') {
+                            item.videoCreatedTimestamp = todayTS;
+                        }
+                    }
+                }
+                return item;
+            });
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
+        }
 
-            try {
-                await scriptsRef.doc(id).update({
-                    isDeleted: false,
-                    deletedTimestamp: null,
-                    deletedAt: null,
-                    updatedAt: getServerTimestamp()
-                });
-            } catch (error) {
-                console.error("Restore script error:", error);
-                alert("Restore failed.");
+        async function executeAuthenticatedPermanentWipeAction(id, sourceContext) {
+            let shouldDeleteDocument = false;
+
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === id) {
+                    if (sourceContext === 'archive') {
+                        item.archiveLogPurged = true;
+                    } else if (sourceContext === 'video') {
+                        item.videoLogPurged = true;
+                    } else {
+                        item.__removeCompletely = true;
+                        shouldDeleteDocument = true;
+                    }
+                }
+                return item;
+            }).filter(item => !item.__removeCompletely);
+
+            if (shouldDeleteDocument) {
+                try { await scriptsRef.doc(id).delete(); } catch (error) { console.error("Firebase delete error:", error); }
             }
+
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
         }
 
-        // PERMANENT DELETE
-        function triggerPermanentDeleteVerification(id) {
-            showModalDialogue(
-                "Permanent Deletion",
-                "Are you absolutely sure? This script will be permanently erased from the database and cannot be recovered.",
-                '',
-                `
-                <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
-                <button class="btn-alert btn-confirm-discard" onclick="executePermanentDelete('${escapeJSString(id)}')">Erase Forever</button>
-                `
-            );
-        }
-
-        async function executePermanentDelete(id) {
-            if (!firebaseReady) return;
-
-            try {
-                await scriptsRef.doc(id).delete();
-                dismissModalOverlay();
-            } catch (error) {
-                console.error("Permanent delete error:", error);
-                alert("Permanent delete failed.");
-            }
-        }
-
-        // --- GLOBAL SYNC ---
-
+        // --- GLOBAL SYNCHRONIZER INFRASTRUCTURE REACTIONS ---
         function syncPipelineInfrastructure() {
+            evaluateAutoExpirationTrackingLifecycle();
             computePipelineCounters();
+            synchronizeDropdownFilteringMenus();
 
             if (isManagerMode) {
-                if (managerViewContext === 'analytics') {
-                    renderManagerAnalytics();
-                } else if (managerViewContext === 'lists') {
-                    renderConfigManagementLists();
-                } else {
-                    renderManagerLists();
-                }
+                changeManagerView(managerViewContext);
+            } else if (isVideoDashboardMode) {
+                drawVideoProductionDashboardView();
+            } else if (isTrashWorkspaceMode) {
+                drawTrashBinWorkspaceView();
             } else {
                 drawPipelineDashboardView();
             }
@@ -1379,8 +2532,9 @@
 
         document.getElementById('fullscreenTitle').addEventListener('input', trackEditorStateChanges);
 
-        // Boot Application Framework View Pipeline
+        // Run Firebase Live Instance Setup Configurations
         startRealtimeFirebaseSync();
+        setTimeout(triggerActiveScreenAnimation, 60);
     </script>
 </body>
 </html>
