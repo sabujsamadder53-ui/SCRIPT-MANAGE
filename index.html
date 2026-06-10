@@ -289,6 +289,8 @@
         .list-item-row:last-child { border-bottom: none; }
         .btn-mini-del { background: none; border: none; color: var(--accent-red); font-weight: bold; cursor: pointer; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -405,15 +407,40 @@
     </div>
 
     <script>
-        let pipelineDataStore = JSON.parse(localStorage.getItem('sm_pro_pipeline')) || [];
-        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRlQpB5zu6hOoMIUrJCZpZcYgDXMwVbpY",
+            authDomain: "script-manage-fa4a9.firebaseapp.com",
+            projectId: "script-manage-fa4a9",
+            storageBucket: "script-manage-fa4a9.firebasestorage.app",
+            messagingSenderId: "895167976965",
+            appId: "1:895167976965:web:fa8b3a8b0b9c74771eae6c"
+        };
+
+        let db = null;
+        let scriptsRef = null;
+        let configRef = null;
+        let firebaseReady = false;
+
+        if (
+            firebaseConfig.apiKey !== "PASTE_YOUR_FULL_API_KEY_HERE" &&
+            firebaseConfig.appId !== "PASTE_YOUR_FULL_APP_ID_HERE"
+        ) {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            scriptsRef = db.collection("scripts");
+            configRef = db.collection("settings").doc("appConfig");
+            firebaseReady = true;
+        }
+
+        let pipelineDataStore = [];
+
         // Dynamic Lists Management for Configuration
-        let appConfigStore = JSON.parse(localStorage.getItem('sm_pro_config')) || {
+        let appConfigStore = {
             products: ["Green Tea", "Hair Oil", "Height Booster"],
             members: ["Sayan", "Sourab", "Abhi", "Sabuj"]
         };
 
-        let executionViewContext = 'active'; 
+        let executionViewContext = 'active';
         let contextualActiveId = null;
 
         let initialTitleCache = "";
@@ -430,9 +457,132 @@
         let isManagerMode = false;
         let managerViewContext = 'analytics';
 
+        // --- SAFETY + FIREBASE HELPERS ---
+
+        function escapeHTML(value) {
+            const div = document.createElement('div');
+            div.textContent = value === null || value === undefined ? '' : String(value);
+            return div.innerHTML;
+        }
+
+        function escapeAttr(value) {
+            return escapeHTML(value).replace(/"/g, '&quot;');
+        }
+
+        function escapeJSString(value) {
+            return String(value === null || value === undefined ? '' : value)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\n/g, "\\n")
+                .replace(/\r/g, "\\r");
+        }
+
+        function getServerTimestamp() {
+            return firebaseReady ? firebase.firestore.FieldValue.serverTimestamp() : new Date();
+        }
+
+        function getCurrentTimestamp() {
+            return new Date().toLocaleString('en-IN', { hour12: true });
+        }
+
+        function normalizeFirestoreDate(value) {
+            if (!value) return null;
+
+            if (value.toDate && typeof value.toDate === 'function') {
+                return value.toDate();
+            }
+
+            if (value instanceof Date) {
+                return value;
+            }
+
+            if (typeof value === 'string') {
+                const parsed = new Date(value);
+                if (!isNaN(parsed.getTime())) return parsed;
+                return null;
+            }
+
+            return null;
+        }
+
+        function formatDisplayTime(timestampValue, fallbackValue) {
+            const dateValue = normalizeFirestoreDate(timestampValue);
+            if (dateValue) {
+                return dateValue.toLocaleString('en-IN', { hour12: true });
+            }
+            return fallbackValue || '';
+        }
+
+        function getDateMatchString(timestampValue, fallbackValue) {
+            const dateValue = normalizeFirestoreDate(timestampValue);
+            if (dateValue) {
+                return dateValue.toLocaleDateString('en-IN');
+            }
+
+            if (fallbackValue && typeof fallbackValue === 'string') {
+                return fallbackValue;
+            }
+
+            return '';
+        }
+
+        function sortPipelineData() {
+            pipelineDataStore.sort((a, b) => {
+                const aSort = a.sortTimestamp || 0;
+                const bSort = b.sortTimestamp || 0;
+                return bSort - aSort;
+            });
+        }
+
+        function showFirebaseConfigWarning() {
+            gridContainer.innerHTML = `<div class="empty-status-text">Firebase config missing. Please paste your full apiKey and appId inside index.html.</div>`;
+            computePipelineCounters();
+        }
+
+        function startRealtimeFirebaseSync() {
+            if (!firebaseReady) {
+                showFirebaseConfigWarning();
+                return;
+            }
+
+            scriptsRef.onSnapshot(snapshot => {
+                pipelineDataStore = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        ...data,
+                        id: data.id || doc.id
+                    };
+                });
+
+                sortPipelineData();
+                syncPipelineInfrastructure();
+            }, error => {
+                console.error("Firestore scripts sync error:", error);
+                alert("Firebase data load error. Please check Firebase config and Firestore rules.");
+            });
+
+            configRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    appConfigStore = {
+                        products: Array.isArray(data.products) ? data.products : ["Green Tea", "Hair Oil", "Height Booster"],
+                        members: Array.isArray(data.members) ? data.members : ["Sayan", "Sourab", "Abhi", "Sabuj"]
+                    };
+
+                    if (isManagerMode && managerViewContext === 'lists') {
+                        renderConfigManagementLists();
+                    }
+                } else {
+                    configRef.set(appConfigStore, { merge: true });
+                }
+            }, error => {
+                console.error("Firestore config sync error:", error);
+            });
+        }
+
         // --- CORE SCRIPT FUNCTIONS ---
 
-        function createNewScriptLog() {
+        async function createNewScriptLog() {
             const titleVal = document.getElementById('prodTitle').value.trim();
             const bodyVal = document.getElementById('prodScript').value.trim();
 
@@ -441,48 +591,76 @@
                 return;
             }
 
+            if (!firebaseReady) {
+                alert("Firebase config missing. Please add apiKey and appId first.");
+                return;
+            }
+
+            const newId = "log_" + Date.now();
+            const nowString = getCurrentTimestamp();
+            const nowSort = Date.now();
+
             const logRecord = {
-                id: "log_" + Date.now(),
+                id: newId,
                 title: titleVal,
                 body: bodyVal,
-                stage: 'pending', 
-                isDeleted: false, 
-                createdTimestamp: new Date().toLocaleString('en-IN', { hour12: true }),
+                stage: 'pending',
+                isDeleted: false,
+                createdTimestamp: nowString,
                 readyTimestamp: null,
                 completedTimestamp: null,
                 deletedTimestamp: null,
-                assignedProduct: null,  // New selection meta tracking
-                assignedMember: null    // New selection meta tracking
+                assignedProduct: null,
+                assignedMember: null,
+                createdAt: getServerTimestamp(),
+                readyAt: null,
+                completedAt: null,
+                deletedAt: null,
+                updatedAt: getServerTimestamp(),
+                sortTimestamp: nowSort
             };
 
-            pipelineDataStore.unshift(logRecord);
-            syncPipelineInfrastructure();
-
-            document.getElementById('prodTitle').value = '';
-            document.getElementById('prodScript').value = '';
+            try {
+                await scriptsRef.doc(newId).set(logRecord);
+                document.getElementById('prodTitle').value = '';
+                document.getElementById('prodScript').value = '';
+            } catch (error) {
+                console.error("Create script error:", error);
+                alert("Script save failed. Please check Firebase rules/config.");
+            }
         }
 
-        function shiftScriptStage(id, targetStage) {
-            pipelineDataStore = pipelineDataStore.map(item => {
-                if (item.id === id) {
-                    item.stage = targetStage;
-                    if(targetStage === 'ready') item.readyTimestamp = new Date().toLocaleString('en-IN', { hour12: true });
-                }
-                return item;
-            });
-            syncPipelineInfrastructure();
+        async function shiftScriptStage(id, targetStage) {
+            if (!firebaseReady) return;
+
+            const updateData = {
+                stage: targetStage,
+                updatedAt: getServerTimestamp()
+            };
+
+            if (targetStage === 'ready') {
+                updateData.readyTimestamp = getCurrentTimestamp();
+                updateData.readyAt = getServerTimestamp();
+            }
+
+            try {
+                await scriptsRef.doc(id).update(updateData);
+            } catch (error) {
+                console.error("Stage update error:", error);
+                alert("Stage update failed.");
+            }
         }
 
         // CUSTOM POPUP FOR MARK DONE SELECTION PIPELINE 
         function openMarkDoneSelectionPopup(id) {
-            let productOptionsMarkup = appConfigStore.products.map(p => `<option value="${p}">${p}</option>`).join('');
-            let memberOptionsMarkup = appConfigStore.members.map(m => `<option value="${m}">${m}</option>`).join('');
+            let productOptionsMarkup = appConfigStore.products.map(p => `<option value="${escapeAttr(p)}">${escapeHTML(p)}</option>`).join('');
+            let memberOptionsMarkup = appConfigStore.members.map(m => `<option value="${escapeAttr(m)}">${escapeHTML(m)}</option>`).join('');
 
             let customSelectionHTML = `
                 <div style="text-align: left; width: 100%; margin-top: 15px;">
                     <label style="font-size:13px; font-weight:600; color:#475569; display:block; margin-bottom:5px;">📦 Select Product Name:</label>
                     <select id="popupSelectProd" class="input-control">${productOptionsMarkup}</select>
-                    
+
                     <label style="font-size:13px; font-weight:600; color:#475569; display:block; margin-bottom:5px; margin-top:10px;">👤 Kisko dena chahte ho?</label>
                     <select id="popupSelectMember" class="input-control">${memberOptionsMarkup}</select>
                 </div>
@@ -494,32 +672,37 @@
                 customSelectionHTML,
                 `
                 <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
-                <button class="btn-alert btn-confirm-save" onclick="executeCustomMarkDone('${id}')">Confirm & Move to Archive</button>
+                <button class="btn-alert btn-confirm-save" onclick="executeCustomMarkDone('${escapeJSString(id)}')">Confirm & Move to Archive</button>
                 `
             );
         }
 
-        function executeCustomMarkDone(id) {
+        async function executeCustomMarkDone(id) {
             const chosenProd = document.getElementById('popupSelectProd').value;
             const chosenMember = document.getElementById('popupSelectMember').value;
 
-            if(!chosenProd || !chosenMember) {
+            if (!chosenProd || !chosenMember) {
                 alert("Please make sure you have both selections assigned.");
                 return;
             }
 
-            pipelineDataStore = pipelineDataStore.map(item => {
-                if (item.id === id) {
-                    item.stage = 'completed';
-                    item.assignedProduct = chosenProd;
-                    item.assignedMember = chosenMember;
-                    item.completedTimestamp = new Date().toLocaleString('en-IN', { hour12: true });
-                }
-                return item;
-            });
+            if (!firebaseReady) return;
 
-            dismissModalOverlay();
-            syncPipelineInfrastructure();
+            try {
+                await scriptsRef.doc(id).update({
+                    stage: 'completed',
+                    assignedProduct: chosenProd,
+                    assignedMember: chosenMember,
+                    completedTimestamp: getCurrentTimestamp(),
+                    completedAt: getServerTimestamp(),
+                    updatedAt: getServerTimestamp()
+                });
+
+                dismissModalOverlay();
+            } catch (error) {
+                console.error("Mark done error:", error);
+                alert("Mark Done failed.");
+            }
         }
 
         // SOFT DELETE (Move to Trash)
@@ -530,22 +713,27 @@
                 '',
                 `
                 <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
-                <button class="btn-alert btn-confirm-discard" onclick="executeSoftDelete('${id}')">Delete</button>
+                <button class="btn-alert btn-confirm-discard" onclick="executeSoftDelete('${escapeJSString(id)}')">Delete</button>
                 `
             );
         }
 
-        function executeSoftDelete(id) {
-            pipelineDataStore = pipelineDataStore.map(item => {
-                if (item.id === id) {
-                    item.isDeleted = true;
-                    item.deletedTimestamp = new Date().toLocaleString('en-IN', { hour12: true });
-                }
-                return item;
-            });
-            dismissModalOverlay();
-            syncPipelineInfrastructure();
-            if(isManagerMode) renderManagerLists();
+        async function executeSoftDelete(id) {
+            if (!firebaseReady) return;
+
+            try {
+                await scriptsRef.doc(id).update({
+                    isDeleted: true,
+                    deletedTimestamp: getCurrentTimestamp(),
+                    deletedAt: getServerTimestamp(),
+                    updatedAt: getServerTimestamp()
+                });
+
+                dismissModalOverlay();
+            } catch (error) {
+                console.error("Soft delete error:", error);
+                alert("Delete failed.");
+            }
         }
 
         function quickDirectCopyFromCard(id, buttonElement) {
@@ -557,7 +745,7 @@
                 buttonElement.innerHTML = "Copied! ✓";
                 buttonElement.style.backgroundColor = "var(--accent-green)";
                 buttonElement.style.color = "white";
-                
+
                 setTimeout(() => {
                     buttonElement.innerHTML = originalText;
                     buttonElement.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
@@ -570,10 +758,10 @@
 
         // RENDER NORMAL DASHBOARD
         function drawPipelineDashboardView() {
-            if (isManagerMode) return; 
-            
+            if (isManagerMode) return;
+
             gridContainer.innerHTML = '';
-            
+
             let filteredSet = pipelineDataStore.filter(item => {
                 if (item.isDeleted) return false;
                 if (executionViewContext === 'active') return item.stage === 'pending';
@@ -590,53 +778,54 @@
                 const rowElement = document.createElement('div');
                 rowElement.className = 'script-row';
 
-                let stampDisplay = item.createdTimestamp;
+                let stampDisplay = formatDisplayTime(item.createdAt, item.createdTimestamp);
                 let assignmentMetadataMarkup = '';
+                const safeId = escapeJSString(item.id);
 
                 if (item.stage === 'ready') {
-                    stampDisplay = `Ready since: ${item.readyTimestamp || item.createdTimestamp}`;
+                    stampDisplay = `Ready since: ${formatDisplayTime(item.readyAt, item.readyTimestamp || item.createdTimestamp)}`;
                 }
                 if (item.stage === 'completed') {
-                    stampDisplay = `Finished: ${item.completedTimestamp || item.createdTimestamp}`;
+                    stampDisplay = `Finished: ${formatDisplayTime(item.completedAt, item.completedTimestamp || item.createdTimestamp)}`;
                     // Inject routing details to card inner container directly as required
                     assignmentMetadataMarkup = `
                         <div style="font-size: 13px; color: var(--primary-dark); margin: 6px 0; background: #f0fdf4; padding: 4px 10px; border-radius: 6px; display: inline-block; font-weight: 600;">
-                            📦 Product: <span style="color:var(--accent-green)">${item.assignedProduct || 'None'}</span> | 👤 Assigned To: <span style="color:var(--accent-blue)">${item.assignedMember || 'None'}</span>
+                            📦 Product: <span style="color:var(--accent-green)">${escapeHTML(item.assignedProduct || 'None')}</span> | 👤 Assigned To: <span style="color:var(--accent-blue)">${escapeHTML(item.assignedMember || 'None')}</span>
                         </div>
                     `;
                 }
 
-                const copyBtnMarkup = `<button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${item.id}', this)">📋 Copy</button>`;
+                const copyBtnMarkup = `<button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>`;
 
                 let operationsButtonsMarkup = '';
                 if (executionViewContext === 'active') {
                     operationsButtonsMarkup = `
                         ${copyBtnMarkup}
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${item.id}')">View Full Screen</button>
-                        <button class="btn-pro btn-ready" onclick="shiftScriptStage('${item.id}', 'ready')">Ready</button>
-                        <button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${item.id}')">Delete</button>
+                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View Full Screen</button>
+                        <button class="btn-pro btn-ready" onclick="shiftScriptStage('${safeId}', 'ready')">Ready</button>
+                        <button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${safeId}')">Delete</button>
                     `;
                 } else if (executionViewContext === 'ready') {
                     operationsButtonsMarkup = `
                         ${copyBtnMarkup}
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${item.id}')">View Full Screen</button>
-                        <button class="btn-pro btn-done" onclick="openMarkDoneSelectionPopup('${item.id}')">Mark Done ✓</button>
-                        <button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${item.id}')">Delete</button>
+                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View Full Screen</button>
+                        <button class="btn-pro btn-done" onclick="openMarkDoneSelectionPopup('${safeId}')">Mark Done ✓</button>
+                        <button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${safeId}')">Delete</button>
                     `;
                 } else {
                     // ARCHIVE LOGS OPERATIONS PANEL - Strict Read-only View Engine Mode activated (No edit / delete controls present)
                     operationsButtonsMarkup = `
                         ${copyBtnMarkup}
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${item.id}')">View Full Screen</button>
+                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View Full Screen</button>
                     `;
                 }
 
                 rowElement.innerHTML = `
                     <div class="row-details">
-                        <div class="meta-time">⏱️ ${stampDisplay}</div>
-                        <div class="row-title">${item.title}</div>
+                        <div class="meta-time">⏱️ ${escapeHTML(stampDisplay)}</div>
+                        <div class="row-title">${escapeHTML(item.title)}</div>
                         ${assignmentMetadataMarkup}
-                        <div class="row-snippet" style="margin-top:4px;">${item.body}</div>
+                        <div class="row-snippet" style="margin-top:4px;">${escapeHTML(item.body)}</div>
                     </div>
                     <div class="row-buttons">
                         ${operationsButtonsMarkup}
@@ -659,11 +848,11 @@
 
         function changeWorkspaceView(context) {
             executionViewContext = context;
-            
+
             document.getElementById('tabActive').classList.toggle('active', context === 'active');
             document.getElementById('tabReady').classList.toggle('active', context === 'ready');
             document.getElementById('tabCompleted').classList.toggle('active', context === 'completed');
-            
+
             const inputSection = document.getElementById('inputSection');
             const listHeader = document.getElementById('listHeader');
 
@@ -716,7 +905,7 @@
 
         function executeQuickScriptCopy() {
             const bodyTextAreaField = document.getElementById('fullscreenBody');
-            
+
             if (!bodyTextAreaField.value) {
                 alert("Nothing inside script workspace text window to copy.");
                 return;
@@ -725,7 +914,7 @@
             navigator.clipboard.writeText(bodyTextAreaField.value).then(() => {
                 masterCopyBtn.innerHTML = "Copied! ✓";
                 masterCopyBtn.style.backgroundColor = "rgba(16, 185, 129, 0.25)";
-                
+
                 setTimeout(() => {
                     masterCopyBtn.innerHTML = "📋 Copy Script";
                     masterCopyBtn.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
@@ -740,7 +929,7 @@
 
         function trackEditorStateChanges() {
             const queryTarget = pipelineDataStore.find(item => item.id === contextualActiveId);
-            if (queryTarget && (queryTarget.stage === 'completed' || queryTarget.isDeleted)) return; 
+            if (queryTarget && (queryTarget.stage === 'completed' || queryTarget.isDeleted)) return;
 
             const liveTitle = document.getElementById('fullscreenTitle').value;
             const liveBody = document.getElementById('fullscreenBody').value;
@@ -752,7 +941,7 @@
             }
         }
 
-        function saveActiveOverlayEdits() {
+        async function saveActiveOverlayEdits() {
             const savedTitle = document.getElementById('fullscreenTitle').value.trim();
             const savedBody = document.getElementById('fullscreenBody').value.trim();
 
@@ -761,19 +950,22 @@
                 return;
             }
 
-            pipelineDataStore = pipelineDataStore.map(item => {
-                if (item.id === contextualActiveId) {
-                    item.title = savedTitle;
-                    item.body = savedBody;
-                }
-                return item;
-            });
+            if (!firebaseReady || !contextualActiveId) return;
 
-            syncPipelineInfrastructure();
-            
-            initialTitleCache = savedTitle;
-            initialBodyCache = savedBody;
-            editorSaveBtn.style.display = "none";
+            try {
+                await scriptsRef.doc(contextualActiveId).update({
+                    title: savedTitle,
+                    body: savedBody,
+                    updatedAt: getServerTimestamp()
+                });
+
+                initialTitleCache = savedTitle;
+                initialBodyCache = savedBody;
+                editorSaveBtn.style.display = "none";
+            } catch (error) {
+                console.error("Save edit error:", error);
+                alert("Save changes failed.");
+            }
         }
 
         function verifyExitSequence() {
@@ -796,8 +988,8 @@
             }
         }
 
-        function commitAndCloseOverlay() {
-            saveActiveOverlayEdits();
+        async function commitAndCloseOverlay() {
+            await saveActiveOverlayEdits();
             dismissModalOverlay();
             terminateStudioWorkspaceWithoutSaving();
         }
@@ -809,6 +1001,7 @@
             contextualActiveId = null;
             if (isManagerMode) {
                 if(managerViewContext === 'analytics') renderManagerAnalytics();
+                else if(managerViewContext === 'lists') renderConfigManagementLists();
                 else renderManagerLists();
             } else {
                 drawPipelineDashboardView();
@@ -827,7 +1020,7 @@
 
         function dismissModalOverlay() {
             systemModal.style.display = "none";
-            document.getElementById('modalInputContainer').innerHTML = ""; 
+            document.getElementById('modalInputContainer').innerHTML = "";
         }
 
         // --- MANAGER PANEL ENGINE ---
@@ -860,8 +1053,8 @@
             document.getElementById('mainStatsBar').style.display = 'none';
             document.getElementById('mainHeaderTitle').innerText = "Manager Dashboard";
             document.getElementById('managerWorkspace').style.display = 'block';
-            document.querySelector('.manager-btn-top').style.display = 'none'; 
-            
+            document.querySelector('.manager-btn-top').style.display = 'none';
+
             document.getElementById('analyticsDate').valueAsDate = new Date();
             changeManagerView('analytics');
         }
@@ -873,13 +1066,13 @@
             document.getElementById('mainStatsBar').style.display = 'flex';
             document.getElementById('mainHeaderTitle').innerText = "All Scripts";
             document.querySelector('.manager-btn-top').style.display = 'block';
-            
-            syncPipelineInfrastructure(); 
+
+            syncPipelineInfrastructure();
         }
 
         function changeManagerView(view) {
             managerViewContext = view;
-            
+
             document.getElementById('tabManagerAnalytics').classList.toggle('active', view === 'analytics');
             document.getElementById('tabManagerAll').classList.toggle('active', view === 'all');
             document.getElementById('tabManagerLists').classList.toggle('active', view === 'lists');
@@ -918,35 +1111,58 @@
         function renderConfigManagementLists() {
             const pList = document.getElementById('mgrProductList');
             const mList = document.getElementById('mgrMemberList');
-            
+
             pList.innerHTML = appConfigStore.products.map(p => `
-                <div class="list-item-row"><span>${p}</span><button class="btn-mini-del" onclick="deleteConfigItem('products', '${p}')">×</button></div>
+                <div class="list-item-row"><span>${escapeHTML(p)}</span><button class="btn-mini-del" onclick="deleteConfigItem('products', '${escapeJSString(p)}')">×</button></div>
             `).join('');
 
             mList.innerHTML = appConfigStore.members.map(m => `
-                <div class="list-item-row"><span>${m}</span><button class="btn-mini-del" onclick="deleteConfigItem('members', '${m}')">×</button></div>
+                <div class="list-item-row"><span>${escapeHTML(m)}</span><button class="btn-mini-del" onclick="deleteConfigItem('members', '${escapeJSString(m)}')">×</button></div>
             `).join('');
         }
 
-        function addNewConfigItem(type, inputId) {
+        async function addNewConfigItem(type, inputId) {
             const input = document.getElementById(inputId);
             const val = input.value.trim();
             if(!val) return;
-            
+
             if(appConfigStore[type].includes(val)){
                 alert("Value already exists.");
                 return;
             }
-            appConfigStore[type].push(val);
-            localStorage.setItem('sm_pro_config', JSON.stringify(appConfigStore));
-            input.value = '';
-            renderConfigManagementLists();
+
+            if (!firebaseReady) return;
+
+            const updatedConfig = {
+                ...appConfigStore,
+                [type]: [...appConfigStore[type], val],
+                updatedAt: getServerTimestamp()
+            };
+
+            try {
+                await configRef.set(updatedConfig, { merge: true });
+                input.value = '';
+            } catch (error) {
+                console.error("Add config item error:", error);
+                alert("Dropdown item save failed.");
+            }
         }
 
-        function deleteConfigItem(type, value) {
-            appConfigStore[type] = appConfigStore[type].filter(item => item !== value);
-            localStorage.setItem('sm_pro_config', JSON.stringify(appConfigStore));
-            renderConfigManagementLists();
+        async function deleteConfigItem(type, value) {
+            if (!firebaseReady) return;
+
+            const updatedConfig = {
+                ...appConfigStore,
+                [type]: appConfigStore[type].filter(item => item !== value),
+                updatedAt: getServerTimestamp()
+            };
+
+            try {
+                await configRef.set(updatedConfig, { merge: true });
+            } catch (error) {
+                console.error("Delete config item error:", error);
+                alert("Dropdown item delete failed.");
+            }
         }
 
         function getStageColor(stage, isDeleted) {
@@ -962,7 +1178,7 @@
             if (!dateInput) return;
 
             const dateObj = new Date(dateInput);
-            const formattedDateMatch = dateObj.toLocaleDateString('en-IN'); 
+            const formattedDateMatch = dateObj.toLocaleDateString('en-IN');
 
             let countCreated = 0;
             let countReadied = 0;
@@ -977,17 +1193,17 @@
                 let matched = false;
                 let eventText = [];
 
-                if (item.createdTimestamp && item.createdTimestamp.includes(formattedDateMatch)) {
+                if (getDateMatchString(item.createdAt, item.createdTimestamp).includes(formattedDateMatch)) {
                     countCreated++;
                     eventText.push("Created");
                     matched = true;
                 }
-                if (item.readyTimestamp && item.readyTimestamp.includes(formattedDateMatch)) {
+                if (getDateMatchString(item.readyAt, item.readyTimestamp).includes(formattedDateMatch)) {
                     countReadied++;
                     eventText.push("Pushed to Ready");
                     matched = true;
                 }
-                if (item.completedTimestamp && item.completedTimestamp.includes(formattedDateMatch)) {
+                if (getDateMatchString(item.completedAt, item.completedTimestamp).includes(formattedDateMatch)) {
                     countDone++;
                     eventText.push("Marked Done");
                     matched = true;
@@ -1006,7 +1222,7 @@
             document.getElementById('statDone').innerText = countDone;
 
             if (eventsForDate.length === 0) {
-                analyticsGrid.innerHTML = `<div class="empty-status-text">No script activities recorded on ${formattedDateMatch}.</div>`;
+                analyticsGrid.innerHTML = `<div class="empty-status-text">No script activities recorded on ${escapeHTML(formattedDateMatch)}.</div>`;
                 return;
             }
 
@@ -1014,24 +1230,25 @@
                 const item = record.item;
                 const row = document.createElement('div');
                 row.className = 'script-row';
+                const safeId = escapeJSString(item.id);
 
-                let statusText = item.isDeleted ? 'TRASH' : item.stage.toUpperCase();
+                let statusText = item.isDeleted ? 'TRASH' : String(item.stage || '').toUpperCase();
                 let statusColor = getStageColor(item.stage, item.isDeleted);
-                
+
                 let extraInfo = '';
                 if(item.stage === 'completed') {
-                    extraInfo = `<div style="font-size:12px; color:#64748b; margin-top:2px;">📦 Product: ${item.assignedProduct || 'None'} | 👤 Member: ${item.assignedMember || 'None'}</div>`;
+                    extraInfo = `<div style="font-size:12px; color:#64748b; margin-top:2px;">📦 Product: ${escapeHTML(item.assignedProduct || 'None')} | 👤 Member: ${escapeHTML(item.assignedMember || 'None')}</div>`;
                 }
 
                 row.innerHTML = `
                     <div class="row-details">
-                        <div class="meta-time">Status: <strong style="color: ${statusColor}; font-weight: 800;">${statusText}</strong> | Event(s) on Date: <strong style="color:var(--accent-blue)">${record.eventStr}</strong></div>
-                        <div class="row-title">${item.title}</div>
+                        <div class="meta-time">Status: <strong style="color: ${statusColor}; font-weight: 800;">${escapeHTML(statusText)}</strong> | Event(s) on Date: <strong style="color:var(--accent-blue)">${escapeHTML(record.eventStr)}</strong></div>
+                        <div class="row-title">${escapeHTML(item.title)}</div>
                         ${extraInfo}
-                        <div class="row-snippet" style="margin-top:2px;">${item.body}</div>
+                        <div class="row-snippet" style="margin-top:2px;">${escapeHTML(item.body)}</div>
                     </div>
                     <div class="row-buttons">
-                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${item.id}')">View</button>
+                        <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
                     </div>
                 `;
                 analyticsGrid.appendChild(row);
@@ -1043,7 +1260,7 @@
             grid.innerHTML = '';
 
             let targetList = [];
-            
+
             if (managerViewContext === 'all') {
                 targetList = pipelineDataStore.filter(i => !i.isDeleted);
             } else if (managerViewContext === 'trash') {
@@ -1058,38 +1275,39 @@
             targetList.forEach(item => {
                 const row = document.createElement('div');
                 row.className = 'script-row';
-                
-                let stamp = item.createdTimestamp;
-                if(item.isDeleted) stamp = `Deleted on: ${item.deletedTimestamp}`;
-                else if (item.stage === 'completed') stamp = `Finished: ${item.completedTimestamp || item.createdTimestamp}`;
-                else if (item.stage === 'ready') stamp = `Ready since: ${item.readyTimestamp || item.createdTimestamp}`;
+                const safeId = escapeJSString(item.id);
 
-                let actionButtons = `<button class="btn-pro btn-view" onclick="bootStudioOverlay('${item.id}')">View</button>`;
+                let stamp = formatDisplayTime(item.createdAt, item.createdTimestamp);
+                if(item.isDeleted) stamp = `Deleted on: ${formatDisplayTime(item.deletedAt, item.deletedTimestamp)}`;
+                else if (item.stage === 'completed') stamp = `Finished: ${formatDisplayTime(item.completedAt, item.completedTimestamp || item.createdTimestamp)}`;
+                else if (item.stage === 'ready') stamp = `Ready since: ${formatDisplayTime(item.readyAt, item.readyTimestamp || item.createdTimestamp)}`;
+
+                let actionButtons = `<button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>`;
 
                 if (managerViewContext === 'all') {
                     // Manager retains administrative control to wipe anything into trash pipeline
-                    actionButtons += `<button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${item.id}')">Delete</button>`;
+                    actionButtons += `<button class="btn-pro btn-delete" onclick="triggerDestructiveDeleteVerification('${safeId}')">Delete</button>`;
                 } else if (managerViewContext === 'trash') {
                     actionButtons += `
-                        <button class="btn-pro btn-restore" onclick="restoreScript('${item.id}')">♻️ Restore</button>
-                        <button class="btn-pro btn-delete" onclick="triggerPermanentDeleteVerification('${item.id}')">Permanent Delete</button>
+                        <button class="btn-pro btn-restore" onclick="restoreScript('${safeId}')">♻️ Restore</button>
+                        <button class="btn-pro btn-delete" onclick="triggerPermanentDeleteVerification('${safeId}')">Permanent Delete</button>
                     `;
                 }
 
-                let statusText = item.isDeleted ? 'TRASH' : item.stage.toUpperCase();
+                let statusText = item.isDeleted ? 'TRASH' : String(item.stage || '').toUpperCase();
                 let statusColor = getStageColor(item.stage, item.isDeleted);
 
                 let extraInfo = '';
                 if(item.stage === 'completed') {
-                    extraInfo = `<div style="font-size:12px; color:#64748b; margin-top:2px;">📦 Product: ${item.assignedProduct || 'None'} | 👤 Member: ${item.assignedMember || 'None'}</div>`;
+                    extraInfo = `<div style="font-size:12px; color:#64748b; margin-top:2px;">📦 Product: ${escapeHTML(item.assignedProduct || 'None')} | 👤 Member: ${escapeHTML(item.assignedMember || 'None')}</div>`;
                 }
 
                 row.innerHTML = `
                     <div class="row-details">
-                        <div class="meta-time">⏱️ ${stamp} | Stage: <strong style="color: ${statusColor}; font-weight: 800;">${statusText}</strong></div>
-                        <div class="row-title">${item.title}</div>
+                        <div class="meta-time">⏱️ ${escapeHTML(stamp)} | Stage: <strong style="color: ${statusColor}; font-weight: 800;">${escapeHTML(statusText)}</strong></div>
+                        <div class="row-title">${escapeHTML(item.title)}</div>
                         ${extraInfo}
-                        <div class="row-snippet" style="margin-top:2px;">${item.body}</div>
+                        <div class="row-snippet" style="margin-top:2px;">${escapeHTML(item.body)}</div>
                     </div>
                     <div class="row-buttons">
                         ${actionButtons}
@@ -1100,16 +1318,20 @@
         }
 
         // RESTORE SCRIPT
-        function restoreScript(id) {
-            pipelineDataStore = pipelineDataStore.map(item => {
-                if (item.id === id) {
-                    item.isDeleted = false;
-                    item.deletedTimestamp = null;
-                }
-                return item;
-            });
-            syncPipelineInfrastructure();
-            renderManagerLists();
+        async function restoreScript(id) {
+            if (!firebaseReady) return;
+
+            try {
+                await scriptsRef.doc(id).update({
+                    isDeleted: false,
+                    deletedTimestamp: null,
+                    deletedAt: null,
+                    updatedAt: getServerTimestamp()
+                });
+            } catch (error) {
+                console.error("Restore script error:", error);
+                alert("Restore failed.");
+            }
         }
 
         // PERMANENT DELETE
@@ -1120,25 +1342,37 @@
                 '',
                 `
                 <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
-                <button class="btn-alert btn-confirm-discard" onclick="executePermanentDelete('${id}')">Erase Forever</button>
+                <button class="btn-alert btn-confirm-discard" onclick="executePermanentDelete('${escapeJSString(id)}')">Erase Forever</button>
                 `
             );
         }
 
-        function executePermanentDelete(id) {
-            pipelineDataStore = pipelineDataStore.filter(item => item.id !== id);
-            dismissModalOverlay();
-            syncPipelineInfrastructure();
-            renderManagerLists();
+        async function executePermanentDelete(id) {
+            if (!firebaseReady) return;
+
+            try {
+                await scriptsRef.doc(id).delete();
+                dismissModalOverlay();
+            } catch (error) {
+                console.error("Permanent delete error:", error);
+                alert("Permanent delete failed.");
+            }
         }
 
         // --- GLOBAL SYNC ---
 
         function syncPipelineInfrastructure() {
-            localStorage.setItem('sm_pro_pipeline', JSON.stringify(pipelineDataStore));
             computePipelineCounters();
-            
-            if (!isManagerMode) {
+
+            if (isManagerMode) {
+                if (managerViewContext === 'analytics') {
+                    renderManagerAnalytics();
+                } else if (managerViewContext === 'lists') {
+                    renderConfigManagementLists();
+                } else {
+                    renderManagerLists();
+                }
+            } else {
                 drawPipelineDashboardView();
             }
         }
@@ -1146,7 +1380,7 @@
         document.getElementById('fullscreenTitle').addEventListener('input', trackEditorStateChanges);
 
         // Boot Application Framework View Pipeline
-        syncPipelineInfrastructure();
+        startRealtimeFirebaseSync();
     </script>
 </body>
 </html>
