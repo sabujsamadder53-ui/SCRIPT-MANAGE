@@ -427,6 +427,131 @@
             border: 1px dashed #cbd5e1;
         }
 
+
+        /* Active & Ready card layout upgrade */
+        .pipeline-modern-card {
+            align-items: stretch;
+            padding: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            border-left: 5px solid var(--accent-blue);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+        }
+        .pipeline-modern-card .pipeline-card-body {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .pipeline-modern-card .pipeline-card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 14px 18px;
+            background: rgba(59, 130, 246, 0.08);
+        }
+        .pipeline-modern-card .pipeline-card-title {
+            font-size: 16px;
+            font-weight: 900;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+        .pipeline-modern-card .pipeline-card-main {
+            padding: 18px 22px 10px 22px;
+        }
+        .pipeline-modern-card .pipeline-script-preview {
+            font-size: 15px;
+            line-height: 1.55;
+            color: #64748b;
+            max-width: 94%;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .pipeline-modern-card .pipeline-show-full {
+            display: inline-block;
+            margin-top: 14px;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--accent-blue);
+            text-decoration: underline;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            padding: 0;
+        }
+        .pipeline-modern-card .pipeline-card-bottom {
+            margin-top: 14px;
+            padding-top: 16px;
+            border-top: 1px dashed #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .pipeline-modern-card .pipeline-bottom-date {
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+        }
+        .pipeline-modern-card .pipeline-bottom-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .pipeline-icon-btn {
+            min-width: 40px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        .pipeline-icon-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.10);
+        }
+        .pipeline-eye-btn { border-color: #67e8f9; color: #0891b2; }
+        .pipeline-trash-btn { border-color: #fb7185; color: #e11d48; }
+        .pipeline-modern-card .btn-card-copy {
+            padding: 9px 18px;
+            border-radius: 999px;
+        }
+        .pipeline-top-action-btn {
+            border: 1px solid #64748b;
+            color: #0f172a;
+            background: #ffffff;
+            padding: 7px 13px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition-smooth);
+        }
+        .pipeline-top-action-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        @media (max-width: 700px) {
+            .pipeline-modern-card .pipeline-card-top,
+            .pipeline-modern-card .pipeline-card-bottom {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .pipeline-modern-card .pipeline-bottom-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+
         /* STUDIO EDITOR COMPONENTS */
         .fullscreen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -1446,6 +1571,21 @@
             return Number.isNaN(parsedTime) ? 0 : parsedTime;
         }
 
+        function doesScriptMatchSelectedProduct(item, selectedProductName) {
+            if (!selectedProductName || selectedProductName === 'all') return true;
+
+            const searchTarget = String(selectedProductName).trim().toLowerCase();
+            if (!searchTarget) return true;
+
+            const assignedProductText = String(item.assignedProduct || '').toLowerCase();
+            const titleText = String(item.title || '').toLowerCase();
+            const scriptBodyText = String(item.body || '').toLowerCase();
+
+            return assignedProductText.includes(searchTarget) ||
+                   titleText.includes(searchTarget) ||
+                   scriptBodyText.includes(searchTarget);
+        }
+
 
         function quickDirectCopyFromCard(id, element) {
             const target = pipelineDataStore.find(item => item.id === id);
@@ -1669,7 +1809,7 @@
 
         function openMarkDoneSelectionPopup(id) {
             let productOptionsMarkup = appConfigStore.products.map(p => `<option value="${escapeAttr(p)}">${escapeHTML(p)}</option>`).join('');
-            let memberOptionsMarkup = appConfigStore.members.map(m => `<option value="${escapeAttr(m)}">${escapeHTML(m)}</option>`).join('');
+            let memberOptionsMarkup = `<option value="None">None</option>` + appConfigStore.members.map(m => `<option value="${escapeAttr(m)}">${escapeHTML(m)}</option>`).join('');
 
             let customSelectionHTML = `
                 <div style="text-align: left; width: 100%; margin-top: 15px;">
@@ -1699,9 +1839,16 @@
             pipelineDataStore = pipelineDataStore.map(item => {
                 if (item.id === id) {
                     item.stage = 'completed';
-                    item.videoStage = 'pending'; 
+
+                    if (chosenMember === 'None') {
+                        item.videoStage = 'none';
+                        item.assignedMember = 'None';
+                    } else {
+                        item.videoStage = 'pending';
+                        item.assignedMember = chosenMember;
+                    }
+
                     item.assignedProduct = chosenProd;
-                    item.assignedMember = chosenMember;
                     item.completedTimestamp = getCurrentTimestamp();
                 }
                 return item;
@@ -1711,6 +1858,7 @@
             saveDemoDataStateSnapshot();
             syncPipelineInfrastructure();
         }
+
 
         function triggerSoftDeleteRoutingVerification(id) {
             showModalDialogue(
@@ -1780,7 +1928,7 @@
 
             let filteredSet = pipelineDataStore.filter(item => {
                 if (item.isDeleted || item.isExpired) return false;
-                
+
                 let matchStage = false;
                 if (executionViewContext === 'active') matchStage = (item.stage === 'pending');
                 else if (executionViewContext === 'ready') matchStage = (item.stage === 'ready');
@@ -1791,10 +1939,7 @@
                 if (!matchStage) return false;
 
                 if (selectedFilterValue !== 'all') {
-                    const searchTarget = String(selectedFilterValue).toLowerCase();
-                    const selectedProductMatch = String(item.assignedProduct || '').toLowerCase() === searchTarget;
-                    const titleProductMatch = String(item.title || '').toLowerCase().includes(searchTarget);
-                    return selectedProductMatch || titleProductMatch;
+                    return doesScriptMatchSelectedProduct(item, selectedFilterValue);
                 }
 
                 return true;
@@ -1807,7 +1952,6 @@
 
             filteredSet.forEach(item => {
                 const rowElement = document.createElement('div');
-                rowElement.className = 'script-row';
                 const safeId = escapeJSString(item.id);
 
                 let stampDisplay = item.createdTimestamp;
@@ -1816,55 +1960,66 @@
                 if (item.stage === 'ready') stampDisplay = `Ready since: ${item.readyTimestamp || item.createdTimestamp}`;
                 if (item.stage === 'completed') {
                     stampDisplay = `Finished: ${item.completedTimestamp || item.createdTimestamp}`;
-                    
+
                     const pColor = appConfigStore.productColors[item.assignedProduct] || '#10b981';
                     const mColor = appConfigStore.memberColors[item.assignedMember] || '#3b82f6';
 
                     assignmentMetadataMarkup = `
                         <div style="margin: 4px 0; display:flex; gap:6px; flex-wrap:wrap;">
                             <span class="custom-render-badge" style="background: rgba(16,185,129,0.05); color: ${pColor}; border:1px solid ${pColor}26;">📦 Product: ${escapeHTML(item.assignedProduct)}</span>
-                            <span class="custom-render-badge" style="background: rgba(59,130,246,0.05); color: ${mColor}; border:1px solid ${mColor}26;">👤 Assigned To: ${escapeHTML(item.assignedMember)}</span>
+                            <span class="custom-render-badge" style="background: rgba(59,130,246,0.05); color: ${mColor}; border:1px solid ${mColor}26;">👤 Assigned To: ${escapeHTML(item.assignedMember || 'None')}</span>
                         </div>
                     `;
                 }
 
-                const copyBtnMarkup = `<button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>`;
-                let operationsButtonsMarkup = '';
+                if (executionViewContext === 'active' || executionViewContext === 'ready') {
+                    rowElement.className = 'script-row pipeline-modern-card';
 
-                if (executionViewContext === 'active') {
-                    operationsButtonsMarkup = `
-                        <div class="pipeline-action-grid">
-                            ${copyBtnMarkup}
-                            <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
-                            <button class="btn-pro btn-ready" onclick="shiftScriptStage('${safeId}', 'ready')">Ready</button>
-                            <button class="btn-pro btn-delete" onclick="triggerSoftDeleteRoutingVerification('${safeId}')">Delete</button>
-                        </div>
-                    `;
-                } else if (executionViewContext === 'ready') {
-                    operationsButtonsMarkup = `
-                        <div class="pipeline-action-grid">
-                            ${copyBtnMarkup}
-                            <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>
-                            <button class="btn-pro btn-done" onclick="openMarkDoneSelectionPopup('${safeId}')">Mark Done ✓</button>
-                            <button class="btn-pro btn-delete" onclick="triggerSoftDeleteRoutingVerification('${safeId}')">Delete</button>
+                    const topActionMarkup = executionViewContext === 'active'
+                        ? `<button class="pipeline-top-action-btn" onclick="shiftScriptStage('${safeId}', 'ready')">☐ Ready</button>`
+                        : `<button class="pipeline-top-action-btn" onclick="openMarkDoneSelectionPopup('${safeId}')">☐ Mark Done</button>`;
+
+                    rowElement.innerHTML = `
+                        <div class="pipeline-card-body">
+                            <div class="pipeline-card-top">
+                                <div class="pipeline-card-title">📦 ${escapeHTML(item.title)}</div>
+                                ${topActionMarkup}
+                            </div>
+                            <div class="pipeline-card-main">
+                                <div class="pipeline-script-preview">${escapeHTML(item.body)}</div>
+                                <button class="pipeline-show-full" onclick="bootStudioOverlay('${safeId}')">Show Full Script ▾</button>
+                                <div class="pipeline-card-bottom">
+                                    <div class="pipeline-bottom-date">🗓️ ${escapeHTML(stampDisplay || item.createdTimestamp)}</div>
+                                    <div class="pipeline-bottom-actions">
+                                        <button class="pipeline-icon-btn pipeline-eye-btn" onclick="bootStudioOverlay('${safeId}')" title="View Full Screen">👁️</button>
+                                        <button class="pipeline-icon-btn pipeline-trash-btn" onclick="triggerSoftDeleteRoutingVerification('${safeId}')" title="Delete">🗑️</button>
+                                        <button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else {
-                    operationsButtonsMarkup = `${copyBtnMarkup} <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>`;
+                    rowElement.className = 'script-row';
+
+                    const copyBtnMarkup = `<button class="btn-pro btn-card-copy" onclick="quickDirectCopyFromCard('${safeId}', this)">📋 Copy</button>`;
+                    const operationsButtonsMarkup = `${copyBtnMarkup} <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">View</button>`;
+
+                    rowElement.innerHTML = `
+                        <div class="row-details">
+                            <div class="meta-time">⏱️ ${escapeHTML(stampDisplay)}</div>
+                            <div class="row-title">${escapeHTML(item.title)}</div>
+                            ${assignmentMetadataMarkup}
+                            <div class="row-snippet" style="margin-top:4px;">${escapeHTML(item.body)}</div>
+                        </div>
+                        <div class="row-buttons">${operationsButtonsMarkup}</div>
+                    `;
                 }
 
-                rowElement.innerHTML = `
-                    <div class="row-details">
-                        <div class="meta-time">⏱️ ${escapeHTML(stampDisplay)}</div>
-                        <div class="row-title">${escapeHTML(item.title)}</div>
-                        ${assignmentMetadataMarkup}
-                        <div class="row-snippet" style="margin-top:4px;">${escapeHTML(item.body)}</div>
-                    </div>
-                    <div class="row-buttons">${operationsButtonsMarkup}</div>
-                `;
                 gridContainer.appendChild(rowElement);
             });
         }
+
 
         function drawVideoProductionDashboardView() {
             if (!isVideoDashboardMode || isManagerMode || isTrashWorkspaceMode) return;
@@ -1884,7 +2039,7 @@
                     if(!item.videoCreatedTimestamp || !item.videoCreatedTimestamp.includes(todayStr)) return false;
                 }
 
-                if (chosenProdFilter !== 'all' && item.assignedProduct !== chosenProdFilter) return false;
+                if (chosenProdFilter !== 'all' && !doesScriptMatchSelectedProduct(item, chosenProdFilter)) return false;
                 if (chosenUserFilter !== 'all' && item.assignedMember !== chosenUserFilter) return false;
 
                 return true;
@@ -2734,7 +2889,7 @@
                 if (item.stage !== 'completed' || item.videoStage !== 'ready') return false;
                 if (!isDateWithinEmployeeRange(item.videoCreatedTimestamp, startDateValue, endDateValue)) return false;
                 if (memberValue !== 'all' && item.assignedMember !== memberValue) return false;
-                if (productValue !== 'all' && item.assignedProduct !== productValue) return false;
+                if (productValue !== 'all' && !doesScriptMatchSelectedProduct(item, productValue)) return false;
                 return true;
             });
         }
