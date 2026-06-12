@@ -1523,6 +1523,15 @@
             color: #9a3412 !important;
         }
 
+
+        .script-control-tab-count {
+            display:block;
+            margin-top:3px;
+            font-size:14px;
+            font-weight:900;
+            line-height:1;
+        }
+
     </style>
     <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore-compat.js"></script>
@@ -1649,14 +1658,20 @@
             <button class="tab-link" id="tabManagerLists" onclick="changeManagerView('lists')">📋 Manage Dropdowns</button>
             <button class="tab-link" id="tabManagerAccess" onclick="changeManagerView('access')">🔐 Password & Access</button>
             <button class="tab-link" id="tabManagerTrash" onclick="changeManagerView('trash')">⚙️ Modify Trash</button>
+            <button class="tab-link" id="tabManagerScriptControl" onclick="changeManagerView('scriptControl')">🧰 Script Control</button>
         </div>
 
         <div id="managerTrashSubTabsWrapper" style="display: none; justify-content: center; gap: 10px; margin-bottom: 20px;">
             <button class="sub-tab-link active" id="subTabMgtTrash" onclick="changeManagerTrashSubView('trash')">🗑️ Manual Trash</button>
-            <button class="sub-tab-link" id="subTabMgtAll" onclick="changeManagerTrashSubView('all')">📚 All Scripts</button>
-            <button class="sub-tab-link" id="subTabMgtArchive" onclick="changeManagerTrashSubView('archive')">🗃️ Archive Logs</button>
-            <button class="sub-tab-link" id="subTabMgtVideo" onclick="changeManagerTrashSubView('video')">🎬 Ready Video</button>
             <button class="sub-tab-link" id="subTabMgtGlobal" onclick="changeManagerTrashSubView('global')">⏳ Global Trash</button>
+        </div>
+
+        <div id="managerScriptControlSubTabsWrapper" style="display: none; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <button class="sub-tab-link active" id="subTabMscActive" onclick="changeManagerScriptControlSubView('active')">📝 Active List</button>
+            <button class="sub-tab-link" id="subTabMscReady" onclick="changeManagerScriptControlSubView('ready')">✅ Ready List</button>
+            <button class="sub-tab-link" id="subTabMscArchive" onclick="changeManagerScriptControlSubView('archive')">🗃️ Archive Logs</button>
+            <button class="sub-tab-link" id="subTabMscPendingVideo" onclick="changeManagerScriptControlSubView('pendingVideo')">🎬 Pending Video</button>
+            <button class="sub-tab-link" id="subTabMscReadyVideo" onclick="changeManagerScriptControlSubView('readyVideo')">📼 Ready Video (Today)</button>
         </div>
 
         <div class="creation-panel" style="padding: 15px 25px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
@@ -1666,7 +1681,10 @@
         <div id="managerAnalyticsSection">
             <div class="creation-panel">
                 <div class="panel-heading">Select Date For Drill-Down Tracking</div>
-                <input type="date" id="analyticsDate" class="input-control" onchange="syncPipelineInfrastructure()">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input type="date" id="analyticsDate" class="input-control" style="flex:1; min-width:220px;" onchange="applyManagerAnalyticsDateFilter()">
+                    <button class="btn-pro btn-view" onclick="resetManagerAnalyticsDateFilterToToday()">Today</button>
+                </div>
             </div>
             
             <div class="analytics-grid">
@@ -1695,9 +1713,11 @@
                     <div>
                         <label style="font-size:12px; font-weight:700; color:#64748b; display:block; margin-bottom:5px;">Date Range</label>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <input type="date" id="employeeStartDate" class="input-control" onchange="renderEmployeeUpdateReport()">
-                            <span style="font-size:12px; font-weight:800; color:#64748b; white-space:nowrap;">to</span>
-                            <input type="date" id="employeeEndDate" class="input-control" onchange="renderEmployeeUpdateReport()">
+                            <input type="hidden" id="employeeStartDate">
+                            <input type="hidden" id="employeeEndDate">
+                            <input type="text" id="employeeRangeDisplay" class="input-control" value="" readonly onclick="openEmployeeRangeCalendar()" style="cursor:pointer; min-width:230px;" placeholder="Select date/range">
+                            <button type="button" class="btn-pro btn-confirm-save" onclick="openEmployeeRangeCalendar()">📅</button>
+                            <button type="button" class="btn-pro btn-view" onclick="resetEmployeeUpdateDateRangeToToday()">Today</button>
                         </div>
                     </div>
                     <div>
@@ -1783,6 +1803,25 @@
         </div>
 
         <div id="managerListSection" style="display: none;">
+            <div id="managerTrashDatePanel" class="creation-panel" style="display:none; padding:14px 18px; margin-bottom:18px;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:space-between;">
+                    <div style="font-size:13px; font-weight:900; color:#64748b;">Modify Trash Date Filter</div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <input type="date" id="managerTrashDate" class="input-control" style="width:180px; padding:8px;" onchange="applyManagerTrashDateFilter()">
+                        <button class="btn-pro btn-view" onclick="resetManagerTrashDateFilter()">Today</button>
+                        <button class="btn-pro btn-ready" onclick="showManagerTrashAllTime()">All Time</button>
+                    </div>
+                </div>
+            </div>
+            <div id="managerScriptControlDatePanel" class="creation-panel" style="display:none; padding:14px 18px; margin-bottom:18px;">
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:space-between;">
+                    <div style="font-size:13px; font-weight:900; color:#64748b;">Script Control Date Filter</div>
+                    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                        <input type="date" id="managerScriptControlDate" class="input-control" style="width:180px; padding:8px;" onchange="applyManagerScriptControlDateFilter()">
+                        <button class="btn-pro btn-view" onclick="resetManagerScriptControlDateFilter()">Today</button>
+                    </div>
+                </div>
+            </div>
             <div class="list-title" id="managerListTitle">Manager Operations View</div>
             <div class="scripts-grid" id="managerGridContainer"></div>
         </div>
@@ -1813,21 +1852,24 @@
     </div>
 
     <script>
-        // --- FIREBASE CLOUD STORAGE ENGINES (GITHUB LIVE VERSION) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCRIqpB5zu6hOoMIUrJCZpZcYgDXMWvbpY",
-            authDomain: "script-manage-fa4a9.firebaseapp.com",
-            projectId: "script-manage-fa4a9",
-            storageBucket: "script-manage-fa4a9.firebasestorage.app",
-            messagingSenderId: "895167976965",
-            appId: "1:895167976965:web:fa8b3a8b09c74771eae6c",
-            measurementId: "G-8JYZJQL1WF"
+        // --- FIREBASE + LOCAL BACKUP STORAGE ENGINE (GITHUB READY VERSION) ---
+        // Paste your Firebase Web App config below. If config is not filled, the app safely falls back to LocalStorage.
+        const FIREBASE_CONFIG = {
+            apiKey: "PASTE_FIREBASE_API_KEY_HERE",
+            authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
+            projectId: "PASTE_PROJECT_ID",
+            storageBucket: "PASTE_PROJECT_ID.appspot.com",
+            messagingSenderId: "PASTE_MESSAGING_SENDER_ID",
+            appId: "PASTE_FIREBASE_APP_ID"
         };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const scriptsRef = db.collection("scripts");
-        const configRef = db.collection("settings").doc("appConfig");
+        const FIREBASE_COLLECTION_NAME = "scriptDashboard";
+        const FIREBASE_DOC_ID = "mainData";
+        const LOCAL_STORAGE_DATA_KEY = "script_dashboard_local_pipeline_data_v1";
+        const LOCAL_STORAGE_CONFIG_KEY = "script_dashboard_local_app_config_v1";
+        let firebaseDbInstance = null;
+        let firestoreUnsubscribe = null;
+        let isApplyingRemoteSnapshot = false;
+        let firebaseInitialRenderDone = false;
 
         let pipelineDataStore = [];
         const DEFAULT_ACCESS_USERS = [
@@ -1840,11 +1882,12 @@
             members: ["Sayan", "Sourab", "Abhi", "Sabuj"],
             memberColors: { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" },
             users: DEFAULT_ACCESS_USERS,
-            employeeManualOverrides: {}
+            employeeManualOverrides: {},
+            scriptControlHistoryLedger: {}
         };
 
-        let firebaseDataReady = false;
-        let firebaseConfigReady = false;
+        let firebaseDataReady = true;
+        let firebaseConfigReady = true;
         let firebaseSaveTimer = null;
 
         let executionViewContext = 'active';
@@ -1852,7 +1895,9 @@
         let trashViewContext = 'archive';
         let drillDownAnalyticsContext = 'created'; 
         let employeeReportContext = 'product'; 
-        let managerTrashSubContext = 'trash'; // Tracks inside option 3 sub tabs
+        let managerTrashSubContext = 'trash'; // Tracks inside Modify Trash sub tabs
+        let managerTrashAllTimeMode = false;
+        let managerScriptControlSubContext = 'active'; // Tracks inside Script Control sub tabs
         
         let isVideoDashboardMode = false; 
         let isTrashWorkspaceMode = false;
@@ -1901,7 +1946,6 @@
                 if (managerViewContext === 'employee') triggerSmoothSectionAnimation('managerEmployeeUpdateSection');
                 if (managerViewContext === 'lists') triggerSmoothSectionAnimation('managerDropdownsConfigSection');
                 if (managerViewContext === 'access') triggerSmoothSectionAnimation('managerAccessControlSection');
-                if (managerViewContext === 'access') triggerSmoothSectionAnimation('managerAccessControlSection');
                 if (managerViewContext === 'trash') triggerSmoothSectionAnimation('managerListSection');
             } else if (isVideoDashboardMode) {
                 triggerSmoothSectionAnimation('videoWorkspace');
@@ -1916,63 +1960,150 @@
         }
 
         // --- FIREBASE DATA SYNC PROCEDURES ---
+        function isFirebaseConfigFilled() {
+            try {
+                return !!(
+                    FIREBASE_CONFIG &&
+                    FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).includes('PASTE_') &&
+                    FIREBASE_CONFIG.projectId && !String(FIREBASE_CONFIG.projectId).includes('PASTE_') &&
+                    FIREBASE_CONFIG.appId && !String(FIREBASE_CONFIG.appId).includes('PASTE_')
+                );
+            } catch (error) { return false; }
+        }
+
+        function normalizeStoredConfigPayload(data) {
+            data = data || {};
+            return {
+                products: Array.isArray(data.products) && data.products.length ? data.products : ["Green Tea", "Hair Oil", "Height Booster"],
+                productColors: data.productColors || { "Green Tea": "#10b981", "Hair Oil": "#3b82f6", "Height Booster": "#8b5cf6" },
+                members: Array.isArray(data.members) && data.members.length ? data.members : ["Sayan", "Sourab", "Abhi", "Sabuj"],
+                memberColors: data.memberColors || { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" },
+                users: Array.isArray(data.users) && data.users.length ? data.users : DEFAULT_ACCESS_USERS,
+                employeeManualOverrides: data.employeeManualOverrides || {},
+                scriptControlHistoryLedger: data.scriptControlHistoryLedger || {}
+            };
+        }
+
+        function applyRemoteOrLocalPayload(payload) {
+            payload = payload || {};
+            pipelineDataStore = Array.isArray(payload.pipelineDataStore) ? payload.pipelineDataStore : (Array.isArray(payload.pipeline) ? payload.pipeline : []);
+            appConfigStore = normalizeStoredConfigPayload(payload.appConfigStore || payload.config || {});
+        }
+
+        function writeLocalBackupSnapshot() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(pipelineDataStore || []));
+                localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(appConfigStore || {}));
+            } catch (error) {
+                console.error("Local backup save error:", error);
+            }
+        }
+
+        function readLocalBackupSnapshot() {
+            try {
+                const savedPipeline = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
+                const savedConfig = localStorage.getItem(LOCAL_STORAGE_CONFIG_KEY);
+                if (savedPipeline) pipelineDataStore = JSON.parse(savedPipeline) || [];
+                if (savedConfig) appConfigStore = normalizeStoredConfigPayload(JSON.parse(savedConfig) || {});
+            } catch (error) {
+                console.error("Local backup load error:", error);
+            }
+        }
+
+        function getFirebaseMainDocRef() {
+            if (!firebaseDbInstance) return null;
+            return firebaseDbInstance.collection(FIREBASE_COLLECTION_NAME).doc(FIREBASE_DOC_ID);
+        }
+
         function saveDemoDataStateSnapshot() {
-            if (!firebaseDataReady) return;
+            try {
+                seedScriptControlHistoryLedger && seedScriptControlHistoryLedger();
+            } catch (error) {}
 
+            writeLocalBackupSnapshot();
+
+            if (isApplyingRemoteSnapshot) return;
             if (firebaseSaveTimer) clearTimeout(firebaseSaveTimer);
-            firebaseSaveTimer = setTimeout(async () => {
-                try {
-                    await configRef.set(appConfigStore, { merge: true });
-
-                    const batch = db.batch();
-                    pipelineDataStore.forEach(item => {
-                        if (!item || !item.id) return;
-                        const cleanItem = { ...item };
-                        delete cleanItem.__removeCompletely;
-                        batch.set(scriptsRef.doc(item.id), cleanItem, { merge: true });
-                    });
-                    await batch.commit();
-                } catch (error) {
+            firebaseSaveTimer = setTimeout(() => {
+                const docRef = getFirebaseMainDocRef();
+                if (!docRef) return;
+                const payload = {
+                    pipelineDataStore: pipelineDataStore || [],
+                    appConfigStore: appConfigStore || {},
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAtLocal: new Date().toISOString()
+                };
+                docRef.set(payload, { merge: true }).catch(error => {
                     console.error("Firebase save error:", error);
-                    alert("Firebase save error. Please check internet connection and Firestore rules.");
-                }
+                    alert("Firebase save error. Check config, Firestore rules, and internet connection. Local backup is still saved in this browser.");
+                });
             }, 120);
         }
 
         function startRealtimeFirebaseSync() {
-            scriptsRef.orderBy("sortTimestamp", "desc").onSnapshot(snapshot => {
-                pipelineDataStore = snapshot.docs.map(doc => doc.data());
-                firebaseDataReady = true;
-                syncPipelineInfrastructure();
-            }, error => {
-                console.error("Firebase scripts load error:", error);
-                alert("Firebase data load error. Please check Firestore rules/config.");
-            });
+            readLocalBackupSnapshot();
+            ensureDefaultAccessUsers();
 
-            configRef.onSnapshot(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
-                    appConfigStore = {
-                        products: data.products || ["Green Tea", "Hair Oil", "Height Booster"],
-                        productColors: data.productColors || { "Green Tea": "#10b981", "Hair Oil": "#3b82f6", "Height Booster": "#8b5cf6" },
-                        members: data.members || ["Sayan", "Sourab", "Abhi", "Sabuj"],
-                        memberColors: data.memberColors || { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" },
-                        users: Array.isArray(data.users) && data.users.length ? data.users : DEFAULT_ACCESS_USERS,
-                        employeeManualOverrides: data.employeeManualOverrides || {}
-                    };
-                    ensureDefaultAccessUsers();
-                    firebaseConfigReady = true;
-                    if (!currentUserSession) initializeAuthenticationGate();
-                    else updateAccessControlledHeaderState();
-                    syncPipelineInfrastructure();
-                } else {
-                    configRef.set(appConfigStore);
+            if (!isFirebaseConfigFilled() || typeof firebase === 'undefined') {
+                console.warn("Firebase config is not filled. Running with LocalStorage backup only.");
+                firebaseDataReady = true;
+                firebaseConfigReady = true;
+                initializeAuthenticationGate();
+                syncPipelineInfrastructure();
+                return;
+            }
+
+            try {
+                if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+                firebaseDbInstance = firebase.firestore();
+                firebaseDataReady = false;
+                firebaseConfigReady = false;
+                const docRef = getFirebaseMainDocRef();
+
+                firestoreUnsubscribe = docRef.onSnapshot(snapshot => {
+                    isApplyingRemoteSnapshot = true;
+                    try {
+                        if (snapshot.exists) {
+                            applyRemoteOrLocalPayload(snapshot.data() || {});
+                            writeLocalBackupSnapshot();
+                        } else {
+                            // First deploy: create cloud document from current local/default state.
+                            docRef.set({
+                                pipelineDataStore: pipelineDataStore || [],
+                                appConfigStore: appConfigStore || {},
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                updatedAtLocal: new Date().toISOString()
+                            }, { merge: true });
+                        }
+                        ensureDefaultAccessUsers();
+                        firebaseDataReady = true;
+                        firebaseConfigReady = true;
+
+                        if (!firebaseInitialRenderDone) {
+                            firebaseInitialRenderDone = true;
+                            initializeAuthenticationGate();
+                        }
+                        syncPipelineInfrastructure();
+                    } catch (error) {
+                        console.error("Firebase snapshot apply error:", error);
+                    } finally {
+                        setTimeout(() => { isApplyingRemoteSnapshot = false; }, 0);
+                    }
+                }, error => {
+                    console.error("Firebase realtime sync error:", error);
+                    firebaseDataReady = true;
                     firebaseConfigReady = true;
                     initializeAuthenticationGate();
-                }
-            }, error => {
-                console.error("Firebase config load error:", error);
-            });
+                    syncPipelineInfrastructure();
+                    alert("Firebase realtime sync error. App is running from local backup. Check Firestore rules/config.");
+                });
+            } catch (error) {
+                console.error("Firebase initialization error:", error);
+                firebaseDataReady = true;
+                firebaseConfigReady = true;
+                initializeAuthenticationGate();
+                syncPipelineInfrastructure();
+            }
         }
 
 
@@ -2182,6 +2313,19 @@
             return new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
         }
 
+        function toInputDateString(dateValue) {
+            const sourceDate = dateValue instanceof Date ? dateValue : new Date(dateValue || Date.now());
+            const indiaParts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Asia/Kolkata',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(sourceDate);
+            const map = {};
+            indiaParts.forEach(part => { map[part.type] = part.value; });
+            return `${map.year}-${map.month}-${map.day}`;
+        }
+
         function extractDateStringFromTimestamp(timestampValue) {
             if (!timestampValue) return '';
             return String(timestampValue).split(',')[0].trim();
@@ -2216,6 +2360,46 @@
 
             const parsedTime = new Date(year, month - 1, day, hour, minute, second).getTime();
             return Number.isNaN(parsedTime) ? 0 : parsedTime;
+        }
+
+
+        function getTimelineSortValueForContext(item, contextKey) {
+            if (!item) return 0;
+            const key = String(contextKey || '').toLowerCase();
+            const fromStamp = (...values) => {
+                for (const value of values) {
+                    const parsed = getTimestampSortValue(value);
+                    if (parsed) return parsed;
+                }
+                return 0;
+            };
+
+            if (key === 'active' || key === 'active-list') {
+                return fromStamp(item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+            }
+            if (key === 'ready' || key === 'ready-list') {
+                return fromStamp(item.readyTimestamp, item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+            }
+            if (key === 'completed' || key === 'archive' || key === 'archive-logs') {
+                return fromStamp(item.completedTimestamp, item.readyTimestamp, item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+            }
+            if (key === 'pending' || key === 'pendingvideo' || key === 'pending-video') {
+                return fromStamp(item.editStartClockTime, item.completedTimestamp, item.readyTimestamp, item.createdTimestamp) || Number(item.editStartEpoch) || Number(item.sortTimestamp) || 0;
+            }
+            if (key === 'video-ready' || key === 'readyvideo' || key === 'ready-video' || key === 'video') {
+                return fromStamp(item.videoCreatedTimestamp, item.editEndClockTime, item.completedTimestamp, item.readyTimestamp, item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+            }
+            if (key === 'trash' || key === 'manual-trash') {
+                return fromStamp(item.deletedTimestamp, item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+            }
+            if (key === 'global' || key === 'global-trash') {
+                return fromStamp(item.expiredTimestamp, item.videoCreatedTimestamp, item.completedTimestamp, item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+            }
+            return fromStamp(item.videoCreatedTimestamp, item.editEndClockTime, item.completedTimestamp, item.readyTimestamp, item.createdTimestamp) || Number(item.sortTimestamp) || 0;
+        }
+
+        function sortNewestTimelineFirst(dataset, contextKey) {
+            return dataset.sort((a, b) => getTimelineSortValueForContext(b, contextKey) - getTimelineSortValueForContext(a, contextKey));
         }
 
         function normalizeProductFilterText(value) {
@@ -2752,6 +2936,8 @@
                 return true;
             });
 
+            sortNewestTimelineFirst(filteredSet, executionViewContext === 'completed' ? 'archive' : executionViewContext);
+
             if (filteredSet.length === 0) {
                 gridContainer.innerHTML = `<div class="empty-status-text">No active layout elements tracking located matching search filters boundaries.</div>`;
                 return;
@@ -2852,15 +3038,7 @@
                 return true;
             });
 
-            dataset.sort((a, b) => {
-                const aTime = videoViewContext === 'ready'
-                    ? getTimestampSortValue(a.videoCreatedTimestamp)
-                    : getTimestampSortValue(a.completedTimestamp);
-                const bTime = videoViewContext === 'ready'
-                    ? getTimestampSortValue(b.videoCreatedTimestamp)
-                    : getTimestampSortValue(b.completedTimestamp);
-                return (bTime || b.sortTimestamp || 0) - (aTime || a.sortTimestamp || 0);
-            });
+            sortNewestTimelineFirst(dataset, videoViewContext === 'ready' ? 'readyVideo' : 'pendingVideo');
 
             if (dataset.length === 0) {
                 videoGridContainer.innerHTML = `<div class="empty-status-text">No active data scripts located inside this queue layer subset loop.</div>`;
@@ -2972,6 +3150,8 @@
                 if (!item.isExpired) return false;
                 return (trashViewContext === item.expiredFromContext);
             });
+
+            sortNewestTimelineFirst(dataset, 'global');
 
             if (dataset.length === 0) {
                 trashGridContainer.innerHTML = `<div class="empty-status-text">No midnight global trash records found inside storage context nodes.</div>`;
@@ -3378,6 +3558,7 @@
             document.getElementById('tabManagerLists').classList.toggle('active', view === 'lists');
             document.getElementById('tabManagerAccess').classList.toggle('active', view === 'access');
             document.getElementById('tabManagerTrash').classList.toggle('active', view === 'trash');
+            document.getElementById('tabManagerScriptControl').classList.toggle('active', view === 'scriptControl');
 
             const analyticsSec = document.getElementById('managerAnalyticsSection');
             const employeeSec = document.getElementById('managerEmployeeUpdateSection');
@@ -3385,6 +3566,11 @@
             const accessSec = document.getElementById('managerAccessControlSection');
             const listSec = document.getElementById('managerListSection');
             const subTabsWrapper = document.getElementById('managerTrashSubTabsWrapper');
+            const scriptControlSubTabsWrapper = document.getElementById('managerScriptControlSubTabsWrapper');
+            const scriptControlDatePanel = document.getElementById('managerScriptControlDatePanel');
+            const trashDatePanel = document.getElementById('managerTrashDatePanel');
+            if (scriptControlDatePanel) scriptControlDatePanel.style.display = 'none';
+            if (trashDatePanel) trashDatePanel.style.display = 'none';
 
             if (view === 'analytics') {
                 analyticsSec.style.display = 'block';
@@ -3393,6 +3579,7 @@
                 configDropdownsSec.style.display = 'none';
                 accessSec.style.display = 'none';
                 subTabsWrapper.style.display = 'none';
+                scriptControlSubTabsWrapper.style.display = 'none';
                 renderManagerAnalytics();
                 triggerSmoothSectionAnimation('managerAnalyticsSection');
                 triggerSmoothListAnimation('analyticsGridContainer');
@@ -3403,6 +3590,7 @@
                 configDropdownsSec.style.display = 'none';
                 accessSec.style.display = 'none';
                 subTabsWrapper.style.display = 'none';
+                scriptControlSubTabsWrapper.style.display = 'none';
                 prepareEmployeeUpdateControls();
                 renderEmployeeUpdateReport();
                 triggerSmoothSectionAnimation('managerEmployeeUpdateSection');
@@ -3414,6 +3602,7 @@
                 configDropdownsSec.style.display = 'block';
                 accessSec.style.display = 'none';
                 subTabsWrapper.style.display = 'none';
+                scriptControlSubTabsWrapper.style.display = 'none';
                 renderConfigManagementLists();
                 triggerSmoothSectionAnimation('managerDropdownsConfigSection');
             } else if (view === 'access') {
@@ -3423,6 +3612,7 @@
                 configDropdownsSec.style.display = 'none';
                 accessSec.style.display = 'block';
                 subTabsWrapper.style.display = 'none';
+                scriptControlSubTabsWrapper.style.display = 'none';
                 renderAccessManagementPanel();
                 triggerSmoothSectionAnimation('managerAccessControlSection');
             } else if (view === 'trash') {
@@ -3432,7 +3622,21 @@
                 accessSec.style.display = 'none';
                 listSec.style.display = 'block';
                 subTabsWrapper.style.display = 'flex';
+                scriptControlSubTabsWrapper.style.display = 'none';
+                if (trashDatePanel) { trashDatePanel.style.display = 'block'; ensureManagerTrashDateDefault(); }
                 changeManagerTrashSubView(managerTrashSubContext);
+                triggerSmoothSectionAnimation('managerListSection');
+                triggerSmoothListAnimation('managerGridContainer');
+            } else if (view === 'scriptControl') {
+                analyticsSec.style.display = 'none';
+                employeeSec.style.display = 'none';
+                configDropdownsSec.style.display = 'none';
+                accessSec.style.display = 'none';
+                listSec.style.display = 'block';
+                subTabsWrapper.style.display = 'none';
+                scriptControlSubTabsWrapper.style.display = 'flex';
+                if (scriptControlDatePanel) { scriptControlDatePanel.style.display = 'block'; ensureManagerScriptControlDateDefault(); }
+                changeManagerScriptControlSubView(managerScriptControlSubContext);
                 triggerSmoothSectionAnimation('managerListSection');
                 triggerSmoothListAnimation('managerGridContainer');
             }
@@ -3547,12 +3751,21 @@
         function changeManagerTrashSubView(subContext) {
             managerTrashSubContext = subContext;
             document.getElementById('subTabMgtTrash').classList.toggle('active', subContext === 'trash');
-            document.getElementById('subTabMgtAll').classList.toggle('active', subContext === 'all');
-            document.getElementById('subTabMgtArchive').classList.toggle('active', subContext === 'archive');
-            document.getElementById('subTabMgtVideo').classList.toggle('active', subContext === 'video');
             document.getElementById('subTabMgtGlobal').classList.toggle('active', subContext === 'global');
 
             renderManagerTrashLists(subContext);
+            triggerSmoothListAnimation('managerGridContainer');
+        }
+
+        function changeManagerScriptControlSubView(subContext) {
+            managerScriptControlSubContext = subContext;
+            document.getElementById('subTabMscActive').classList.toggle('active', subContext === 'active');
+            document.getElementById('subTabMscReady').classList.toggle('active', subContext === 'ready');
+            document.getElementById('subTabMscArchive').classList.toggle('active', subContext === 'archive');
+            document.getElementById('subTabMscPendingVideo').classList.toggle('active', subContext === 'pendingVideo');
+            document.getElementById('subTabMscReadyVideo').classList.toggle('active', subContext === 'readyVideo');
+
+            renderManagerScriptControlLists(subContext);
             triggerSmoothListAnimation('managerGridContainer');
         }
 
@@ -3681,11 +3894,154 @@
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
+
+        let employeeRangeTempStartDate = '';
+        let employeeRangeTempEndDate = '';
+        let employeeRangeWaitingForEnd = false;
+        let employeeCalendarViewDate = new Date();
+
+        function formatEmployeeInputDateForDisplay(dateValue) {
+            if (!dateValue) return '';
+            const parts = String(dateValue).split('-');
+            if (parts.length !== 3) return dateValue;
+            return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+
+        function getEmployeeRangeDisplayText(startValue, endValue) {
+            const startText = formatEmployeeInputDateForDisplay(startValue);
+            const endText = formatEmployeeInputDateForDisplay(endValue || startValue);
+            if (!startValue) return '';
+            return startText === endText ? startText : `${startText} to ${endText}`;
+        }
+
+        function syncEmployeeRangeDisplayFromHidden() {
+            const startInput = document.getElementById('employeeStartDate');
+            const endInput = document.getElementById('employeeEndDate');
+            const display = document.getElementById('employeeRangeDisplay');
+            if (!display || !startInput) return;
+            const startValue = startInput.value || '';
+            const endValue = (endInput && endInput.value) ? endInput.value : startValue;
+            employeeRangeTempStartDate = startValue;
+            employeeRangeTempEndDate = endValue;
+            employeeRangeWaitingForEnd = false;
+            display.value = getEmployeeRangeDisplayText(startValue, endValue);
+        }
+
+        function openEmployeeRangeCalendar() {
+            const startInput = document.getElementById('employeeStartDate');
+            const endInput = document.getElementById('employeeEndDate');
+            const todayIso = toInputDateString(new Date());
+            employeeRangeTempStartDate = (startInput && startInput.value) ? startInput.value : todayIso;
+            employeeRangeTempEndDate = (endInput && endInput.value) ? endInput.value : employeeRangeTempStartDate;
+            employeeRangeWaitingForEnd = false;
+            employeeCalendarViewDate = parseInputDateToLocalDate(employeeRangeTempStartDate) || new Date();
+            showModalDialogue(
+                'Select Employee Report Date',
+                'Ek date select karo ya start date aur end date select karke range banao. Apply dabane par report update hoga.',
+                `<div id="employeeCustomCalendarHost"></div>`,
+                `<button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
+                 <button class="btn-alert btn-confirm-save" onclick="applyEmployeeRangeCalendarSelection()">Apply</button>`
+            );
+            renderEmployeeCustomCalendar();
+        }
+
+        function shiftEmployeeCalendarMonth(delta) {
+            employeeCalendarViewDate = new Date(employeeCalendarViewDate.getFullYear(), employeeCalendarViewDate.getMonth() + delta, 1);
+            renderEmployeeCustomCalendar();
+        }
+
+        function pickEmployeeCalendarDate(isoDate) {
+            if (!employeeRangeWaitingForEnd || !employeeRangeTempStartDate) {
+                employeeRangeTempStartDate = isoDate;
+                employeeRangeTempEndDate = isoDate;
+                employeeRangeWaitingForEnd = true;
+            } else {
+                employeeRangeTempEndDate = isoDate;
+                employeeRangeWaitingForEnd = false;
+                const first = parseInputDateToLocalDate(employeeRangeTempStartDate);
+                const second = parseInputDateToLocalDate(employeeRangeTempEndDate);
+                if (first && second && first.getTime() > second.getTime()) {
+                    const swapValue = employeeRangeTempStartDate;
+                    employeeRangeTempStartDate = employeeRangeTempEndDate;
+                    employeeRangeTempEndDate = swapValue;
+                }
+            }
+            renderEmployeeCustomCalendar();
+        }
+
+        function renderEmployeeCustomCalendar() {
+            const host = document.getElementById('employeeCustomCalendarHost');
+            if (!host) return;
+            const year = employeeCalendarViewDate.getFullYear();
+            const month = employeeCalendarViewDate.getMonth();
+            const monthName = employeeCalendarViewDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+            const firstDay = new Date(year, month, 1);
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const startOffset = firstDay.getDay();
+            const startMs = parseInputDateToLocalDate(employeeRangeTempStartDate)?.getTime() || 0;
+            const endMs = parseInputDateToLocalDate(employeeRangeTempEndDate || employeeRangeTempStartDate)?.getTime() || startMs;
+            let dayCells = '';
+            ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => { dayCells += `<div style="font-size:11px;font-weight:900;color:#64748b;text-align:center;padding:6px 0;">${d}</div>`; });
+            for (let i = 0; i < startOffset; i++) dayCells += `<div></div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(year, month, day);
+                const iso = toInputDateString(dateObj);
+                const ms = dateObj.getTime();
+                const selectedEdge = iso === employeeRangeTempStartDate || iso === employeeRangeTempEndDate;
+                const inRange = startMs && endMs && ms >= Math.min(startMs, endMs) && ms <= Math.max(startMs, endMs);
+                const bg = selectedEdge ? '#3b82f6' : (inRange ? '#dbeafe' : '#ffffff');
+                const color = selectedEdge ? '#ffffff' : '#0f172a';
+                dayCells += `<button type="button" onclick="pickEmployeeCalendarDate('${iso}')" style="border:1px solid ${selectedEdge ? '#3b82f6' : '#e2e8f0'};background:${bg};color:${color};border-radius:8px;padding:8px 0;font-weight:900;cursor:pointer;">${day}</button>`;
+            }
+            const rangeText = employeeRangeWaitingForEnd ? `${formatEmployeeInputDateForDisplay(employeeRangeTempStartDate)} to ...` : getEmployeeRangeDisplayText(employeeRangeTempStartDate, employeeRangeTempEndDate);
+            host.innerHTML = `
+                <div style="width:100%;max-width:340px;margin:0 auto;text-align:left;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                        <button type="button" class="btn-pro btn-view" onclick="shiftEmployeeCalendarMonth(-1)">←</button>
+                        <div style="font-weight:900;color:#0f172a;">${monthName}</div>
+                        <button type="button" class="btn-pro btn-view" onclick="shiftEmployeeCalendarMonth(1)">→</button>
+                    </div>
+                    <div style="font-size:12px;font-weight:800;color:#2563eb;text-align:center;margin-bottom:10px;min-height:18px;">${escapeHTML(rangeText || 'Select date')}</div>
+                    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">${dayCells}</div>
+                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-top:10px;text-align:center;">Single date ke liye same date select karke Apply kar sakte ho.</div>
+                </div>`;
+        }
+
+        function handleEmployeeRangeCalendarPick() {
+            openEmployeeRangeCalendar();
+        }
+
+        function applyEmployeeRangeCalendarSelection() {
+            const startInput = document.getElementById('employeeStartDate');
+            const endInput = document.getElementById('employeeEndDate');
+            if (!startInput || !endInput) return;
+            if (!employeeRangeTempStartDate) {
+                const todayIso = toInputDateString(new Date());
+                employeeRangeTempStartDate = todayIso;
+                employeeRangeTempEndDate = todayIso;
+            }
+            if (!employeeRangeTempEndDate) employeeRangeTempEndDate = employeeRangeTempStartDate;
+            const first = parseInputDateToLocalDate(employeeRangeTempStartDate);
+            const second = parseInputDateToLocalDate(employeeRangeTempEndDate);
+            if (first && second && first.getTime() > second.getTime()) {
+                const swapValue = employeeRangeTempStartDate;
+                employeeRangeTempStartDate = employeeRangeTempEndDate;
+                employeeRangeTempEndDate = swapValue;
+            }
+            startInput.value = employeeRangeTempStartDate;
+            endInput.value = employeeRangeTempEndDate;
+            syncEmployeeRangeDisplayFromHidden();
+            dismissModalOverlay();
+            renderEmployeeUpdateReport();
+        }
+
         function prepareEmployeeUpdateControls() {
             const startInput = document.getElementById('employeeStartDate');
             const endInput = document.getElementById('employeeEndDate');
-            if (startInput && !startInput.value) startInput.valueAsDate = new Date();
-            if (endInput && !endInput.value) endInput.valueAsDate = new Date();
+            const todayIso = toInputDateString(new Date());
+            if (startInput && !startInput.value) startInput.value = todayIso;
+            if (endInput && !endInput.value) endInput.value = startInput ? (startInput.value || todayIso) : todayIso;
+            syncEmployeeRangeDisplayFromHidden();
 
             const memberFilter = document.getElementById('employeeMemberFilter');
             const productFilter = document.getElementById('employeeProductFilter');
@@ -3711,7 +4067,8 @@
             return pipelineDataStore.filter(item => {
                 if (item.isDeleted || item.videoLogPurged) return false;
                 if (item.stage !== 'completed' || item.videoStage !== 'ready') return false;
-                if (!isDateWithinEmployeeRange(item.videoCreatedTimestamp, startDateValue, endDateValue)) return false;
+                const employeeDateStamp = item.videoCreatedTimestamp || item.editEndClockTime || item.completedTimestamp || item.readyTimestamp || item.createdTimestamp;
+                if (!isDateWithinEmployeeRange(employeeDateStamp, startDateValue, endDateValue)) return false;
                 if (memberValue !== 'all' && item.assignedMember !== memberValue) return false;
                 if (productValue !== 'all' && !doesScriptMatchSelectedProduct(item, productValue)) return false;
                 return true;
@@ -3731,6 +4088,91 @@
             if (scriptsBtn) scriptsBtn.classList.toggle('active', mode === 'scripts');
 
             renderEmployeeUpdateReport();
+        }
+
+        function getManualAdjustedEmployeeDisplay(memberName, info) {
+            const manualOverride = getEmployeeManualOverrideForCurrentFilters(memberName);
+            const baseProducts = {};
+            const rawProducts = (info && info.products) ? info.products : {};
+            Object.keys(rawProducts).forEach(product => {
+                baseProducts[product] = {
+                    count: Number(rawProducts[product].count || 0),
+                    seconds: Number(rawProducts[product].seconds || 0)
+                };
+            });
+
+            if (!manualOverride) {
+                return {
+                    count: Number((info || {}).count || 0),
+                    seconds: Number((info || {}).seconds || 0),
+                    products: baseProducts
+                };
+            }
+
+            const adjustedProducts = {};
+            const overrideProducts = manualOverride.products || {};
+            Object.keys(overrideProducts).forEach(product => {
+                const productInfo = overrideProducts[product] || {};
+                adjustedProducts[product] = {
+                    count: Number(productInfo.count || 0),
+                    seconds: Number(productInfo.seconds || 0)
+                };
+            });
+
+            const savedAtMs = getTimestampSortValue(manualOverride.savedAt);
+            if (savedAtMs && Array.isArray((info || {}).scripts)) {
+                info.scripts.forEach(scriptItem => {
+                    const videoMs = getTimestampSortValue(scriptItem.videoCreatedTimestamp || scriptItem.editEndClockTime);
+                    if (videoMs && videoMs > savedAtMs) {
+                        const product = scriptItem.assignedProduct || 'None';
+                        adjustedProducts[product] = adjustedProducts[product] || { count: 0, seconds: 0 };
+                        adjustedProducts[product].count += 1;
+                        adjustedProducts[product].seconds += durationStringToSeconds(scriptItem.totalElapsedTimeFormatted);
+                    }
+                });
+            }
+
+            const count = Object.values(adjustedProducts).reduce((sum, productInfo) => sum + Number(productInfo.count || 0), 0);
+            const seconds = Object.values(adjustedProducts).reduce((sum, productInfo) => sum + Number(productInfo.seconds || 0), 0);
+            return { count, seconds, products: adjustedProducts };
+        }
+
+        function ensureManualEmployeeOverridesInCurrentSummary(memberSummary) {
+            const store = appConfigStore.employeeManualOverrides || {};
+            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
+            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
+            const productValue = (document.getElementById('employeeProductFilter') || {}).value || 'all';
+            const memberValue = (document.getElementById('employeeMemberFilter') || {}).value || 'all';
+
+            Object.keys(store).forEach(key => {
+                const parts = key.split('|');
+                if (parts.length < 4) return;
+                const [keyStart, keyEnd, keyProduct, ...memberParts] = parts;
+                const memberName = memberParts.join('|');
+                if (keyStart !== startDateValue || keyEnd !== endDateValue) return;
+                if (keyProduct !== productValue) return;
+                if (memberValue !== 'all' && memberName !== memberValue) return;
+                if (!memberSummary[memberName]) memberSummary[memberName] = { count: 0, seconds: 0, products: {}, scripts: [] };
+            });
+        }
+
+        function buildAdjustedProductSummaryFromMembers(memberSummary) {
+            const productSummary = {};
+            Object.keys(memberSummary).forEach(member => {
+                const adjusted = getManualAdjustedEmployeeDisplay(member, memberSummary[member]);
+                Object.entries(adjusted.products || {}).forEach(([product, productInfo]) => {
+                    const count = Number(productInfo.count || 0);
+                    const seconds = Number(productInfo.seconds || 0);
+                    if (count <= 0 && seconds <= 0) return;
+                    if (!productSummary[product]) productSummary[product] = { count: 0, seconds: 0, members: {}, scripts: [] };
+                    productSummary[product].count += count;
+                    productSummary[product].seconds += seconds;
+                    productSummary[product].members[member] = productSummary[product].members[member] || { count: 0, seconds: 0 };
+                    productSummary[product].members[member].count += count;
+                    productSummary[product].members[member].seconds += seconds;
+                });
+            });
+            return productSummary;
         }
 
         function renderEmployeeUpdateReport() {
@@ -3758,10 +4200,6 @@
             document.getElementById('empTotalPeople').innerText = uniqueMembers.size;
 
             grid.innerHTML = '';
-            if (dataset.length === 0) {
-                grid.innerHTML = `<div class="empty-status-text">No ready video records found for selected date/filter range.</div>`;
-                return;
-            }
 
             const memberSummary = {};
             const productSummary = {};
@@ -3777,26 +4215,23 @@
                 memberSummary[member].products[product].count += 1;
                 memberSummary[member].products[product].seconds += sec;
                 memberSummary[member].scripts.push(item);
-
-                if (!productSummary[product]) productSummary[product] = { count: 0, seconds: 0, members: {}, scripts: [] };
-                productSummary[product].count += 1;
-                productSummary[product].seconds += sec;
-                productSummary[product].members[member] = productSummary[product].members[member] || { count: 0, seconds: 0 };
-                productSummary[product].members[member].count += 1;
-                productSummary[product].members[member].seconds += sec;
-                productSummary[product].scripts.push(item);
             });
 
-            // Manual employee edits must also update the top summary cards in Employee Report mode.
-            // Earlier, the employee row changed but TOTAL VIDEOS / TOTAL TIME at the top stayed raw.
-            if (reportMode === 'employee') {
+            ensureManualEmployeeOverridesInCurrentSummary(memberSummary);
+            const adjustedProductSummary = buildAdjustedProductSummaryFromMembers(memberSummary);
+
+            if (dataset.length === 0 && Object.keys(memberSummary).length === 0) {
+                grid.innerHTML = `<div class="empty-status-text">No ready video records found for selected date/filter range.</div>`;
+                return;
+            }
+
+            if (reportMode === 'employee' || reportMode === 'product') {
                 let manualAdjustedTotalVideos = 0;
                 let manualAdjustedTotalSeconds = 0;
                 Object.keys(memberSummary).forEach(member => {
-                    const info = memberSummary[member];
-                    const manualOverride = getEmployeeManualOverrideForCurrentFilters(member);
-                    manualAdjustedTotalVideos += manualOverride ? Number(manualOverride.count || 0) : info.count;
-                    manualAdjustedTotalSeconds += manualOverride ? Number(manualOverride.seconds || 0) : info.seconds;
+                    const adjusted = getManualAdjustedEmployeeDisplay(member, memberSummary[member]);
+                    manualAdjustedTotalVideos += adjusted.count;
+                    manualAdjustedTotalSeconds += adjusted.seconds;
                 });
                 document.getElementById('empTotalVideos').innerText = manualAdjustedTotalVideos;
                 document.getElementById('empTotalTime').innerText = secondsToDurationString(manualAdjustedTotalSeconds);
@@ -3833,10 +4268,10 @@
                 Object.keys(memberSummary).sort().forEach(member => {
                     const info = memberSummary[member];
                     const memberColor = appConfigStore.memberColors[member] || '#10b981';
-                    const manualOverride = getEmployeeManualOverrideForCurrentFilters(member);
-                    const displayVideoCount = manualOverride ? manualOverride.count : info.count;
-                    const displayTotalSeconds = manualOverride ? manualOverride.seconds : info.seconds;
-                    const productLines = Object.entries(info.products).sort().map(([product, pInfo]) => {
+                    const adjustedDisplay = getManualAdjustedEmployeeDisplay(member, info);
+                    const displayVideoCount = adjustedDisplay.count;
+                    const displayTotalSeconds = adjustedDisplay.seconds;
+                    const productLines = Object.entries(adjustedDisplay.products || {}).sort().map(([product, pInfo]) => {
                         return `<div style="font-size:12px; color:#475569; margin-top:3px;">📦 <strong>${escapeHTML(product)}</strong>: ${pInfo.count} video | ⏱️ ${secondsToDurationString(pInfo.seconds)}</div>`;
                     }).join('');
                     const row = document.createElement('div');
@@ -3866,8 +4301,8 @@
             }
 
             document.getElementById('employeeUpdateListHeader').innerText = 'Product Wise Video Report';
-            Object.keys(productSummary).sort().forEach(product => {
-                const info = productSummary[product];
+            Object.keys(adjustedProductSummary).sort().forEach(product => {
+                const info = adjustedProductSummary[product];
                 const productColor = appConfigStore.productColors[product] || '#3b82f6';
                 const memberLines = Object.entries(info.members).sort().map(([member, mInfo]) => {
                     const mColor = appConfigStore.memberColors[member] || '#10b981';
@@ -3889,7 +4324,9 @@
                             ${memberLines}
                         </div>
                     </div>
-                    <div class="row-buttons"><button class="btn-pro btn-view" onclick="document.getElementById('employeeReportMode').value='scripts'; document.getElementById('employeeProductFilter').value='${escapeAttr(product)}'; setEmployeeReportMode('scripts');">View Scripts</button></div>
+                    <div class="row-buttons" style="flex-direction:column; align-items:stretch; min-width:110px;">
+                        <button class="btn-pro btn-view" onclick="document.getElementById('employeeReportMode').value='scripts'; document.getElementById('employeeProductFilter').value='${escapeAttr(product)}'; setEmployeeReportMode('scripts');">View Scripts</button>
+                    </div>
                 `;
                 grid.appendChild(row);
             });
@@ -3909,45 +4346,217 @@
             return store[key] || null;
         }
 
+
+        function buildManualProductDropdownOptions(selectedValue) {
+            const selectedText = String(selectedValue || '');
+            const options = Array.from(new Set([...appConfigStore.products, selectedText].filter(Boolean)));
+            return options.map(value => `<option value="${escapeAttr(value)}" ${String(value) === selectedText ? 'selected' : ''}>${escapeHTML(value)}</option>`).join('');
+        }
+
+        function addManualEmployeeProductRow(productValue, countValue, secondsValue) {
+            const host = document.getElementById('manualEmpProductRows');
+            if (!host) return;
+            const selectedProduct = productValue || (appConfigStore.products[0] || 'Manual Entry');
+            const row = document.createElement('div');
+            row.className = 'manualEmpProductRow';
+            row.style.cssText = 'display:grid; grid-template-columns: 1.4fr .7fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;';
+            row.innerHTML = `
+                <select class="input-control manualEmpProductSelect">${buildManualProductDropdownOptions(selectedProduct)}</select>
+                <input type="number" min="0" class="input-control manualEmpProductCount" value="${escapeAttr(String(countValue || 0))}" placeholder="Qty">
+                <input class="input-control manualEmpProductTime" value="${escapeAttr(secondsToDurationString(secondsValue || 0))}" placeholder="00:00:00">
+                <button type="button" class="btn-pro btn-delete" title="Delete" onclick="this.closest('.manualEmpProductRow').remove()">🗑️</button>
+            `;
+            host.appendChild(row);
+        }
+
+        function collectManualEmployeeProductMap() {
+            const productMap = {};
+            const rows = Array.from(document.querySelectorAll('.manualEmpProductRow'));
+            for (const row of rows) {
+                const product = ((row.querySelector('.manualEmpProductSelect') || {}).value || '').trim() || 'Manual Entry';
+                const count = Math.max(0, Number((row.querySelector('.manualEmpProductCount') || {}).value || 0));
+                const timeText = (((row.querySelector('.manualEmpProductTime') || {}).value || '00:00:00').trim() || '00:00:00');
+                if (!/^\d{1,3}:\d{2}:\d{2}$/.test(timeText)) throw new Error('INVALID_PRODUCT_TIME');
+                const seconds = durationStringToSeconds(timeText);
+                if (count > 0 || seconds > 0) {
+                    if (!productMap[product]) productMap[product] = { count: 0, seconds: 0, time: '00:00:00' };
+                    productMap[product].count += count;
+                    productMap[product].seconds += seconds;
+                    productMap[product].time = secondsToDurationString(productMap[product].seconds);
+                }
+            }
+            return productMap;
+        }
+
+        function saveManualProductEmployeeEdit(productName) {
+            const memberName = ((document.getElementById('manualProductMember') || {}).value || '').trim();
+            const product = String(productName || '').trim() || 'Manual Entry';
+            const qty = Math.max(0, Number((document.getElementById('manualProductQty') || {}).value || 0));
+            const timeText = (((document.getElementById('manualProductTime') || {}).value || '00:00:00').trim() || '00:00:00');
+            if (!memberName) { alert('Please select employee.'); return; }
+            if (!/^\d{1,3}:\d{2}:\d{2}$/.test(timeText)) { alert('Please enter time in HH:MM:SS format.'); return; }
+
+            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
+            const overrideKey = getEmployeeManualOverrideKey(memberName);
+            const existing = appConfigStore.employeeManualOverrides[overrideKey] || { count: 0, seconds: 0, products: {}, savedAt: getCurrentTimestamp() };
+            const products = Object.assign({}, existing.products || {});
+            const productAlreadyExists = !!products[product];
+            if (qty > 0 || durationStringToSeconds(timeText) > 0) {
+                products[product] = { count: qty, seconds: durationStringToSeconds(timeText), time: secondsToDurationString(durationStringToSeconds(timeText)) };
+            } else {
+                if (productAlreadyExists && !confirm(`Are you sure to delete this ${product} manual entry for ${memberName}?`)) return;
+                delete products[product];
+            }
+            const finalCount = Object.values(products).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
+            const finalSeconds = Object.values(products).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
+            if (finalCount > 0 || finalSeconds > 0) {
+                appConfigStore.employeeManualOverrides[overrideKey] = {
+                    count: finalCount,
+                    seconds: finalSeconds,
+                    time: secondsToDurationString(finalSeconds),
+                    products,
+                    savedAt: existing.savedAt || getCurrentTimestamp()
+                };
+            } else {
+                delete appConfigStore.employeeManualOverrides[overrideKey];
+            }
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            renderEmployeeUpdateReport();
+        }
+
+        function openProductManualEmployeeEdit(productName) {
+            const product = String(productName || '').trim() || 'Manual Entry';
+            const memberOptions = appConfigStore.members.map(member => `<option value="${escapeAttr(member)}">${escapeHTML(member)}</option>`).join('');
+            showModalDialogue(
+                "Edit Product Manual Videos",
+                `Select employee and set manual video count/time for ${escapeHTML(product)}. Set quantity 0 and time 00:00:00 to remove it from Product Report and Employee Report.`,
+                `
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin-bottom:4px;">Product</label>
+                <input class="input-control" value="${escapeAttr(product)}" disabled>
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Employee</label>
+                <select class="input-control" id="manualProductMember">${memberOptions}</select>
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Qty</label>
+                <input type="number" min="0" class="input-control" id="manualProductQty" value="1">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Time (HH:MM:SS)</label>
+                <input class="input-control" id="manualProductTime" value="00:00:00" placeholder="00:00:00">
+                `,
+                `
+                <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
+                <button class="btn-alert btn-confirm-save" onclick="saveManualProductEmployeeEdit('${escapeJSString(product)}')">Save</button>
+                `
+            );
+        }
+
         function openEmployeeManualEdit(memberName, currentCount, currentTime) {
             const override = getEmployeeManualOverrideForCurrentFilters(memberName);
-            const countValue = override ? override.count : currentCount;
-            const timeValue = override ? secondsToDurationString(override.seconds) : currentTime;
+            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
+            const rawProducts = {};
+            memberDataset.forEach(item => {
+                const product = item.assignedProduct || 'None';
+                rawProducts[product] = rawProducts[product] || { count: 0, seconds: 0 };
+                rawProducts[product].count += 1;
+                rawProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
+            });
+            const existingProducts = override && override.products ? override.products : rawProducts;
             showModalDialogue(
                 "Edit Employee Manual Report",
-                `Manual update for ${escapeHTML(memberName)}. This will update the Employee Report for the selected date range/product filter.`,
+                `Manual update for ${escapeHTML(memberName)}. Select product, add quantity and time.`,
                 `
                 <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin-bottom:4px;">Employee</label>
                 <input class="input-control" id="manualEmpName" value="${escapeAttr(memberName)}" disabled>
-                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Total Videos</label>
-                <input type="number" min="0" class="input-control" id="manualEmpCount" value="${escapeAttr(String(countValue || 0))}">
-                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Total Time (HH:MM:SS)</label>
-                <input class="input-control" id="manualEmpTime" value="${escapeAttr(timeValue || '00:00:00')}" placeholder="00:00:00">
+                <div style="margin-top:12px; padding:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
+                    <div style="font-size:12px;font-weight:900;color:#334155;margin-bottom:8px;text-align:left;">Product Wise Manual Videos</div>
+                    <div style="display:grid; grid-template-columns: 1.4fr .7fr 1fr auto; gap:8px; font-size:11px; font-weight:900; color:#64748b; margin-bottom:5px; text-align:left;">
+                        <span>Product</span><span>Qty</span><span>Time</span><span></span>
+                    </div>
+                    <div id="manualEmpProductRows"></div>
+                    <button type="button" class="btn-pro btn-view" style="margin-top:6px;" onclick="addManualEmployeeProductRow('', 0, 0)">+ Add Product</button>
+                </div>
                 `,
                 `
                 <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
                 <button class="btn-alert btn-confirm-save" onclick="saveEmployeeManualEdit('${escapeJSString(memberName)}')">Save Manual</button>
                 `
             );
+            const entries = Object.entries(existingProducts || {}).filter(([product, pInfo]) => Number(pInfo.count || 0) > 0 || Number(pInfo.seconds || 0) > 0);
+            if (entries.length) {
+                entries.forEach(([product, pInfo]) => addManualEmployeeProductRow(product, pInfo.count || 0, pInfo.seconds || 0));
+            } else {
+                addManualEmployeeProductRow('', 0, 0);
+            }
         }
 
-        function saveEmployeeManualEdit(memberName) {
-            const countValue = Math.max(0, Number((document.getElementById('manualEmpCount') || {}).value || 0));
-            const timeValue = ((document.getElementById('manualEmpTime') || {}).value || '00:00:00').trim();
-            if (!/^\d{1,3}:\d{2}:\d{2}$/.test(timeValue)) {
-                alert('Please enter time in HH:MM:SS format.');
-                return;
-            }
+        let pendingEmployeeManualSavePayload = null;
+
+        function applyEmployeeManualOverrideSave(memberName, productMap) {
             appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
-            appConfigStore.employeeManualOverrides[getEmployeeManualOverrideKey(memberName)] = {
-                count: countValue,
-                seconds: durationStringToSeconds(timeValue),
-                time: secondsToDurationString(durationStringToSeconds(timeValue)),
+            const overrideKey = getEmployeeManualOverrideKey(memberName);
+            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
+            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
+
+            // Keep even empty manual override so deleted manual/auto product rows do not come back from base script data.
+            appConfigStore.employeeManualOverrides[overrideKey] = {
+                count: finalCount,
+                seconds: finalSeconds,
+                time: secondsToDurationString(finalSeconds),
+                products: productMap,
                 savedAt: getCurrentTimestamp()
             };
+
+            pendingEmployeeManualSavePayload = null;
             dismissModalOverlay();
             saveDemoDataStateSnapshot();
             renderEmployeeUpdateReport();
+        }
+
+        function confirmPendingEmployeeManualDeleteSave() {
+            if (!pendingEmployeeManualSavePayload) return;
+            applyEmployeeManualOverrideSave(pendingEmployeeManualSavePayload.memberName, pendingEmployeeManualSavePayload.productMap);
+        }
+
+        function saveEmployeeManualEdit(memberName) {
+            let productMap = {};
+            try {
+                productMap = collectManualEmployeeProductMap();
+            } catch (error) {
+                alert('Please enter product time in HH:MM:SS format.');
+                return;
+            }
+
+            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
+            const overrideKey = getEmployeeManualOverrideKey(memberName);
+            const previousOverride = appConfigStore.employeeManualOverrides[overrideKey] || null;
+            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
+            const previousProducts = {};
+
+            if (previousOverride && previousOverride.products) {
+                Object.assign(previousProducts, previousOverride.products);
+            } else {
+                memberDataset.forEach(item => {
+                    const product = item.assignedProduct || 'None';
+                    previousProducts[product] = previousProducts[product] || { count: 0, seconds: 0 };
+                    previousProducts[product].count += 1;
+                    previousProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
+                });
+            }
+
+            const removedProducts = Object.keys(previousProducts).filter(product => !productMap[product]);
+            if (removedProducts.length > 0) {
+                pendingEmployeeManualSavePayload = { memberName, productMap };
+                showModalDialogue(
+                    'Are you sure to delete this?',
+                    `This will remove ${removedProducts.map(escapeHTML).join(', ')} from Product Report and Employee Report count/time.`,
+                    '',
+                    `
+                    <button class="btn-alert btn-cancel-alert" onclick="pendingEmployeeManualSavePayload=null; dismissModalOverlay(); renderEmployeeUpdateReport();">No</button>
+                    <button class="btn-alert btn-confirm-save" onclick="confirmPendingEmployeeManualDeleteSave()">Yes</button>
+                    `
+                );
+                return;
+            }
+
+            applyEmployeeManualOverrideSave(memberName, productMap);
         }
 
         function buildManagerManualEditOptions(listValues, selectedValue, includeNone) {
@@ -4112,6 +4721,30 @@
             if (isManagerMode && managerViewContext === 'trash') renderManagerTrashLists(managerTrashSubContext);
         }
 
+        function applyManagerAnalyticsDateFilter() {
+            renderManagerAnalytics();
+            triggerSmoothListAnimation('analyticsGridContainer');
+        }
+
+        function resetManagerAnalyticsDateFilterToToday() {
+            const input = document.getElementById('analyticsDate');
+            if (input) input.valueAsDate = new Date();
+            applyManagerAnalyticsDateFilter();
+        }
+
+        function resetEmployeeUpdateDateRangeToToday() {
+            const startInput = document.getElementById('employeeStartDate');
+            const endInput = document.getElementById('employeeEndDate');
+            const todayIso = toInputDateString(new Date());
+            if (startInput) startInput.value = todayIso;
+            if (endInput) endInput.value = todayIso;
+            employeeRangeTempStartDate = todayIso;
+            employeeRangeTempEndDate = todayIso;
+            employeeRangeWaitingForEnd = false;
+            syncEmployeeRangeDisplayFromHidden();
+            renderEmployeeUpdateReport();
+        }
+
         function setAnalyticsDrillDownFilter(category) {
             drillDownAnalyticsContext = category;
             
@@ -4126,7 +4759,9 @@
         }
 
         function renderManagerAnalytics() {
-            const dateInput = document.getElementById('analyticsDate').value;
+            const analyticsInput = document.getElementById('analyticsDate');
+            if (analyticsInput && !analyticsInput.value) analyticsInput.valueAsDate = new Date();
+            const dateInput = analyticsInput ? analyticsInput.value : '';
             if (!dateInput) return;
 
             const dateObj = new Date(dateInput);
@@ -4155,7 +4790,8 @@
                     countDone++; 
                     filteredDoneList.push(item);
                 }
-                if (item.videoCreatedTimestamp && item.videoCreatedTimestamp.includes(formattedDateMatch)) {
+                const isActualReadyVideoDone = !item.isDeleted && !item.isExpired && !item.videoLogPurged && item.stage === 'completed' && item.videoStage === 'ready' && item.videoCreatedTimestamp && item.videoCreatedTimestamp.includes(formattedDateMatch);
+                if (isActualReadyVideoDone) {
                     countVideo++;
                     filteredVideoList.push(item);
                 }
@@ -4363,7 +4999,47 @@
             syncPipelineInfrastructure();
         }
 
+        function ensureManagerTrashDateDefault() {
+            const input = document.getElementById('managerTrashDate');
+            if (input && !input.value && !managerTrashAllTimeMode) input.valueAsDate = new Date();
+        }
+
+        function applyManagerTrashDateFilter() {
+            managerTrashAllTimeMode = false;
+            renderManagerTrashLists(managerTrashSubContext);
+            triggerSmoothListAnimation('managerGridContainer');
+        }
+
+        function resetManagerTrashDateFilter() {
+            managerTrashAllTimeMode = false;
+            const input = document.getElementById('managerTrashDate');
+            if (input) input.valueAsDate = new Date();
+            renderManagerTrashLists(managerTrashSubContext);
+            triggerSmoothListAnimation('managerGridContainer');
+        }
+
+        function showManagerTrashAllTime() {
+            managerTrashAllTimeMode = true;
+            const input = document.getElementById('managerTrashDate');
+            if (input) input.value = '';
+            renderManagerTrashLists(managerTrashSubContext);
+            triggerSmoothListAnimation('managerGridContainer');
+        }
+
+        function getManagerTrashDateTimestamp(item, viewContext) {
+            if (viewContext === 'trash') return item.deletedTimestamp || item.createdTimestamp;
+            if (viewContext === 'global') return item.expiredTimestamp || item.videoCreatedTimestamp || item.completedTimestamp || item.createdTimestamp;
+            return item.createdTimestamp;
+        }
+
+        function filterManagerTrashDatasetBySelectedDate(dataset, viewContext) {
+            const input = document.getElementById('managerTrashDate');
+            if (managerTrashAllTimeMode || !input || !input.value) return dataset;
+            return dataset.filter(item => isDateWithinEmployeeRange(getManagerTrashDateTimestamp(item, viewContext), input.value, input.value));
+        }
+
         function renderManagerTrashLists(viewContext) {
+            ensureManagerTrashDateDefault();
             const grid = document.getElementById('managerGridContainer');
             const titleEl = document.getElementById('managerListTitle');
             grid.innerHTML = '';
@@ -4375,7 +5051,7 @@
                 dataset = pipelineDataStore.filter(i => i.isDeleted);
             } else if (viewContext === 'all') {
                 titleEl.innerText = "Manager Inner Node: All Scripts Master Control";
-                dataset = [...pipelineDataStore].sort((a, b) => (Number(b.sortTimestamp) || getTimestampSortValue(b.createdTimestamp) || 0) - (Number(a.sortTimestamp) || getTimestampSortValue(a.createdTimestamp) || 0));
+                dataset = [...pipelineDataStore];
             } else if (viewContext === 'archive') {
                 titleEl.innerText = "Manager Inner Node: System Active Archive Logs";
                 dataset = pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && !i.archiveLogPurged && i.stage === 'completed');
@@ -4386,6 +5062,9 @@
                 titleEl.innerText = "Manager Inner Node: Global Expiration Automated Trash Vault";
                 dataset = pipelineDataStore.filter(i => i.isExpired);
             }
+
+            dataset = filterManagerTrashDatasetBySelectedDate(dataset, viewContext);
+            sortNewestTimelineFirst(dataset, viewContext);
 
             if (dataset.length === 0) {
                 grid.innerHTML = `<div class="empty-status-text">No records matched loop constraints metrics bounds inside this configuration layer.</div>`;
@@ -4446,6 +5125,269 @@
                 `;
                 grid.appendChild(row);
             });
+        }
+
+
+        function ensureManagerScriptControlDateDefault() {
+            const input = document.getElementById('managerScriptControlDate');
+            if (input && !input.value) input.valueAsDate = new Date();
+        }
+
+        function applyManagerScriptControlDateFilter() {
+            renderManagerScriptControlLists(managerScriptControlSubContext);
+            triggerSmoothListAnimation('managerGridContainer');
+        }
+
+        function resetManagerScriptControlDateFilter() {
+            const input = document.getElementById('managerScriptControlDate');
+            if (input) input.valueAsDate = new Date();
+            applyManagerScriptControlDateFilter();
+        }
+
+        function getScriptControlDateTimestampForContext(item, viewContext) {
+            if (viewContext === 'active') return item.createdTimestamp;
+            if (viewContext === 'ready') return item.readyTimestamp || item.createdTimestamp;
+            if (viewContext === 'archive') return item.completedTimestamp || item.expiredTimestamp || item.readyTimestamp || item.createdTimestamp;
+            if (viewContext === 'pendingVideo') return item.completedTimestamp || item.editStartClockTime;
+            if (viewContext === 'readyVideo') return item.videoCreatedTimestamp || item.editEndClockTime;
+            return item.createdTimestamp;
+        }
+
+        function filterScriptControlDatasetBySelectedDate(dataset, viewContext) {
+            const input = document.getElementById('managerScriptControlDate');
+            if (!input || !input.value) return dataset;
+            return dataset.filter(item => isDateWithinEmployeeRange(getScriptControlDateTimestampForContext(item, viewContext), input.value, input.value));
+        }
+
+        function getManagerScriptControlDataset(viewContext) {
+            if (viewContext === 'active') return pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'pending');
+            if (viewContext === 'ready') return pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'ready');
+            if (viewContext === 'archive') return pipelineDataStore.filter(i => !i.isDeleted && !i.archiveLogPurged && i.stage === 'completed' && (!i.isExpired || i.expiredFromContext === 'archive'));
+            if (viewContext === 'pendingVideo') return pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'completed' && i.videoStage === 'pending');
+            if (viewContext === 'readyVideo') return pipelineDataStore.filter(i => !i.isDeleted && !i.videoLogPurged && i.stage === 'completed' && i.videoStage === 'ready' && (!i.isExpired || i.expiredFromContext === 'video'));
+            return [];
+        }
+
+        function getManagerScriptControlTitle(viewContext) {
+            const map = {
+                active: 'Manager Script Control: Active List Logs',
+                ready: 'Manager Script Control: Ready List Logs',
+                archive: 'Manager Script Control: Archive Logs',
+                pendingVideo: 'Manager Script Control: Pending Video Logs',
+                readyVideo: 'Manager Script Control: Ready Video Logs'
+            };
+            return map[viewContext] || 'Manager Script Control';
+        }
+
+        function buildManagerScriptControlCard(item, viewContext) {
+            const safeId = escapeJSString(item.id);
+            const operationalStatusLabel = getManagerOperationalStatusLabel(item);
+            const managerStatusDropdownMarkup = buildManagerStatusDropdownMarkup(item);
+            const hasProductValue = item.assignedProduct && String(item.assignedProduct).trim() && String(item.assignedProduct).trim().toLowerCase() !== 'none';
+            const hasMemberValue = item.assignedMember && String(item.assignedMember).trim() && String(item.assignedMember).trim().toLowerCase() !== 'none';
+            const hasDurationValue = item.totalElapsedTimeFormatted && String(item.totalElapsedTimeFormatted).trim() && String(item.totalElapsedTimeFormatted).trim() !== '00:00:00';
+            const productColor = hasProductValue ? (appConfigStore.productColors[item.assignedProduct] || '#10b981') : '#10b981';
+            const memberColor = hasMemberValue ? (appConfigStore.memberColors[item.assignedMember] || '#3b82f6') : '#3b82f6';
+
+            let badges = '';
+            if (hasProductValue) badges += `<span class="custom-render-badge" style="background: rgba(16,185,129,0.05); color:${productColor}; border:1px solid ${productColor}26;">📦 Product: ${escapeHTML(item.assignedProduct)}</span>`;
+            if (hasMemberValue) badges += `<span class="custom-render-badge" style="background: rgba(59,130,246,0.05); color:${memberColor}; border:1px solid ${memberColor}26;">👤 Editor/Video By: ${escapeHTML(item.assignedMember)}</span>`;
+            if (item.editStartClockTime) badges += `<span class="custom-render-badge" style="background: rgba(14,165,233,0.06); color:#0369a1; border:1px solid rgba(14,165,233,0.24);">▶ Start: ${escapeHTML(item.editStartClockTime)}</span>`;
+            if (item.editEndClockTime || item.videoCreatedTimestamp) badges += `<span class="custom-render-badge" style="background: rgba(16,185,129,0.06); color:#047857; border:1px solid rgba(16,185,129,0.24);">✅ Done: ${escapeHTML(item.editEndClockTime || item.videoCreatedTimestamp)}</span>`;
+            if (hasDurationValue) badges += `<span class="custom-render-badge" style="background: rgba(245,158,11,0.06); color:#d97706; border:1px solid rgba(245,158,11,0.24);">⏱️ Time: ${escapeHTML(item.totalElapsedTimeFormatted)}</span>`;
+
+            const row = document.createElement('div');
+            row.className = 'script-row';
+            row.innerHTML = `
+                <div class="row-details">
+                    <div class="meta-time">ID Reference Key: ${escapeHTML(item.id)}</div>
+                    <div class="row-title">${escapeHTML(item.title)}</div>
+                    <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                        Status State Flag: <strong>${escapeHTML(operationalStatusLabel)}</strong>
+                        | Created/Add Time: ${escapeHTML(item.createdTimestamp || 'N/A')}
+                        ${item.readyTimestamp ? ` | Ready Time: ${escapeHTML(item.readyTimestamp)}` : ''}
+                        ${item.completedTimestamp ? ` | Archive Time: ${escapeHTML(item.completedTimestamp)}` : ''}
+                    </div>
+                    ${badges ? `<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:7px;">${badges}</div>` : ''}
+                    <div class="row-snippet" style="margin-top:7px;">${escapeHTML(item.body)}</div>
+                </div>
+                <div class="row-buttons" style="min-width:205px; align-items:stretch; flex-direction:column;">
+                    <button class="btn-pro btn-view" onclick="bootStudioOverlay('${safeId}')">Modify / View</button>
+                    <button class="btn-pro btn-manual-edit" onclick="openManagerScriptControlManualEdit('${safeId}')">Edit Manual</button>
+                    <button class="btn-pro btn-delete" onclick="executeAuthenticatedPermanentWipeAction('${safeId}', '${escapeJSString(viewContext)}')">Purge Forever</button>
+                    ${managerStatusDropdownMarkup}
+                </div>
+            `;
+            return row;
+        }
+
+        function renderManagerScriptControlLists(viewContext) {
+            const grid = document.getElementById('managerGridContainer');
+            const titleEl = document.getElementById('managerListTitle');
+            grid.innerHTML = '';
+            titleEl.innerText = getManagerScriptControlTitle(viewContext);
+            ensureManagerScriptControlDateDefault();
+            const dataset = sortNewestTimelineFirst(filterScriptControlDatasetBySelectedDate(getManagerScriptControlDataset(viewContext), viewContext), viewContext);
+            if (dataset.length === 0) {
+                grid.innerHTML = `<div class="empty-status-text">No records matched loop constraints metrics bounds inside this script control layer.</div>`;
+                return;
+            }
+            dataset.forEach(item => grid.appendChild(buildManagerScriptControlCard(item, viewContext)));
+        }
+
+        function openManagerScriptControlManualEdit(id) {
+            const item = pipelineDataStore.find(entry => entry.id === id);
+            if (!item) return;
+            const productOptions = buildManagerManualEditOptions(appConfigStore.products || [], item.assignedProduct || 'None', true);
+            const memberOptions = buildManagerManualEditOptions(appConfigStore.members || [], item.assignedMember || 'None', true);
+            const currentStatus = getManagerOperationalStatusKey(item);
+            const statusOptions = [
+                ['active-list', 'Active List'],
+                ['ready-list', 'Ready List'],
+                ['archive-logs', 'Archive Logs'],
+                ['pending-video', 'Pending Video'],
+                ['ready-video', 'Ready Video'],
+                ['manual-trash', 'Manual Trash'],
+                ['global-trash', 'Global Trash']
+            ].map(([value, label]) => `<option value="${value}" ${value === currentStatus ? 'selected' : ''}>${label}</option>`).join('');
+
+            let dynamicFieldsMarkup = '';
+            if (currentStatus === 'active-list') {
+                dynamicFieldsMarkup = `
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Created / Added Time</label>
+                <input class="input-control" id="manualControlCreated" value="${escapeAttr(item.createdTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}">
+                `;
+            } else if (currentStatus === 'ready-list') {
+                dynamicFieldsMarkup = `
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Product</label>
+                <select class="input-control" id="manualControlProduct">${productOptions}</select>
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Created / Added Time</label>
+                <input class="input-control" id="manualControlCreated" value="${escapeAttr(item.createdTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Ready List Time</label>
+                <input class="input-control" id="manualControlReady" value="${escapeAttr(item.readyTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}">
+                `;
+            } else {
+                dynamicFieldsMarkup = `
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Product</label>
+                <select class="input-control" id="manualControlProduct">${productOptions}</select>
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Editor / Video By</label>
+                <select class="input-control" id="manualControlMember">${memberOptions}</select>
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Created / Added Time</label>
+                <input class="input-control" id="manualControlCreated" value="${escapeAttr(item.createdTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Ready List Time</label>
+                <input class="input-control" id="manualControlReady" value="${escapeAttr(item.readyTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Archive / Mark Done Time</label>
+                <input class="input-control" id="manualControlCompleted" value="${escapeAttr(item.completedTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Start Editing Time</label>
+                <input class="input-control" id="manualControlStart" value="${escapeAttr(item.editStartClockTime || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}" oninput="refreshManagerScriptControlTotalAuto()" onchange="refreshManagerScriptControlTotalAuto()">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Edit Done / Ready Video Time</label>
+                <input class="input-control" id="manualControlEnd" value="${escapeAttr(item.editEndClockTime || item.videoCreatedTimestamp || '')}" placeholder="${escapeAttr(getCurrentTimestamp())}" oninput="refreshManagerScriptControlTotalAuto()" onchange="refreshManagerScriptControlTotalAuto()">
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin:10px 0 4px;">Total Time (HH:MM:SS)</label>
+                <input class="input-control" id="manualControlTotal" value="${escapeAttr(item.totalElapsedTimeFormatted || '00:00:00')}" placeholder="00:00:00">
+                `;
+            }
+            showModalDialogue(
+                'Manual Script Control Edit',
+                currentStatus === 'active-list' ? 'Change status and created time. Changes update everywhere.' : (currentStatus === 'ready-list' ? 'Change status, product, created time and ready list time. Changes update everywhere.' : 'Change status, product, editor, created/ready/archive/start/done time and total time. Changes update everywhere.'),
+                `
+                <label style="display:block;text-align:left;font-size:12px;font-weight:800;color:#64748b;margin-bottom:4px;">Status</label>
+                <select class="input-control" id="manualControlStatus">${statusOptions}</select>
+                ${dynamicFieldsMarkup}
+                `,
+                `
+                <button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
+                <button class="btn-alert btn-confirm-save" onclick="saveManagerScriptControlManualEdit('${escapeJSString(id)}')">Save Changes</button>
+                `
+            );
+            setTimeout(refreshManagerScriptControlTotalAuto, 0);
+        }
+
+        function refreshManagerScriptControlTotalAuto() {
+            const startInput = document.getElementById('manualControlStart');
+            const endInput = document.getElementById('manualControlEnd');
+            const totalInput = document.getElementById('manualControlTotal');
+            if (!startInput || !endInput || !totalInput) return;
+            const autoSeconds = calculateManualReadyVideoDurationSeconds(startInput.value, endInput.value);
+            if (autoSeconds === null) return;
+            totalInput.value = secondsToDurationString(autoSeconds);
+        }
+
+        function applyManagerStatusDirect(item, nextStatus) {
+            const nowStamp = getCurrentTimestamp();
+            item.archiveLogPurged = false;
+            item.videoLogPurged = false;
+            if (nextStatus !== 'manual-trash') { item.isDeleted = false; item.deletedTimestamp = null; }
+            if (nextStatus !== 'global-trash') { item.isExpired = false; item.expiredTimestamp = null; item.expiredFromContext = null; }
+            if (nextStatus === 'active-list') {
+                item.stage = 'pending'; item.videoStage = 'none';
+            } else if (nextStatus === 'ready-list') {
+                item.stage = 'ready'; item.videoStage = 'none'; item.readyTimestamp = item.readyTimestamp || nowStamp;
+            } else if (nextStatus === 'archive-logs') {
+                item.stage = 'completed'; item.videoStage = 'none'; item.completedTimestamp = item.completedTimestamp || nowStamp;
+            } else if (nextStatus === 'pending-video') {
+                item.stage = 'completed'; item.videoStage = 'pending'; item.completedTimestamp = item.completedTimestamp || nowStamp;
+            } else if (nextStatus === 'ready-video') {
+                item.stage = 'completed'; item.videoStage = 'ready'; item.completedTimestamp = item.completedTimestamp || nowStamp; item.videoCreatedTimestamp = item.videoCreatedTimestamp || nowStamp; item.editEndClockTime = item.editEndClockTime || item.videoCreatedTimestamp;
+            } else if (nextStatus === 'manual-trash') {
+                item.isDeleted = true; item.deletedTimestamp = nowStamp; item.isExpired = false; item.expiredTimestamp = null; item.expiredFromContext = null;
+            } else if (nextStatus === 'global-trash') {
+                item.isDeleted = false; item.deletedTimestamp = null; item.isExpired = true; item.expiredTimestamp = nowStamp; item.expiredFromContext = (item.stage === 'completed' && item.videoStage === 'ready') ? 'video' : 'archive';
+            }
+            return item;
+        }
+
+        function saveManagerScriptControlManualEdit(id) {
+            const statusValue = (document.getElementById('manualControlStatus') || {}).value || 'active-list';
+            const originalItem = pipelineDataStore.find(entry => entry.id === id) || {};
+            const productEl = document.getElementById('manualControlProduct');
+            const memberEl = document.getElementById('manualControlMember');
+            const createdEl = document.getElementById('manualControlCreated');
+            const readyEl = document.getElementById('manualControlReady');
+            const completedEl = document.getElementById('manualControlCompleted');
+            const startEl = document.getElementById('manualControlStart');
+            const endEl = document.getElementById('manualControlEnd');
+            const totalEl = document.getElementById('manualControlTotal');
+
+            const productValue = productEl ? (productEl.value || 'None') : (originalItem.assignedProduct || 'None');
+            const memberValue = memberEl ? (memberEl.value || 'None') : (originalItem.assignedMember || 'None');
+            const createdValue = createdEl ? (createdEl.value || '').trim() : (originalItem.createdTimestamp || '');
+            const readyValue = readyEl ? (readyEl.value || '').trim() : (originalItem.readyTimestamp || '');
+            const completedValue = completedEl ? (completedEl.value || '').trim() : (originalItem.completedTimestamp || '');
+            const startValue = startEl ? (startEl.value || '').trim() : (originalItem.editStartClockTime || '');
+            const endValue = endEl ? (endEl.value || '').trim() : (originalItem.editEndClockTime || originalItem.videoCreatedTimestamp || '');
+            const totalValue = totalEl ? ((totalEl.value || '00:00:00').trim()) : (originalItem.totalElapsedTimeFormatted || '00:00:00');
+            if (totalEl && !/^\d{1,3}:\d{2}:\d{2}$/.test(totalValue)) { alert('Please enter total time in HH:MM:SS format.'); return; }
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id !== id) return item;
+                clearAndWipeActiveTickerThread(item.id);
+                item.assignedProduct = String(productValue).toLowerCase() === 'none' ? null : productValue;
+                item.assignedMember = String(memberValue).toLowerCase() === 'none' ? null : memberValue;
+                item.createdTimestamp = createdValue || item.createdTimestamp || getCurrentTimestamp();
+                if (readyEl) item.readyTimestamp = readyValue || null;
+                if (completedEl) item.completedTimestamp = completedValue || null;
+                if (startEl) item.editStartClockTime = startValue || null;
+                if (endEl) item.editEndClockTime = endValue || null;
+                if (endEl) item.videoCreatedTimestamp = endValue || item.videoCreatedTimestamp || null;
+                if (totalEl) item.totalElapsedTimeFormatted = secondsToDurationString(durationStringToSeconds(totalValue));
+                item.isEditingCurrentlyActive = false;
+                item.isEditingPaused = false;
+                item.editStartEpoch = null;
+                item = applyManagerStatusDirect(item, statusValue);
+                if (statusValue === 'pending-video' && item.editStartClockTime && !item.editEndClockTime) {
+                    const startMs = getTimestampSortValue(item.editStartClockTime);
+                    item.isEditingCurrentlyActive = true;
+                    item.isEditingPaused = false;
+                    item.editStartEpoch = startMs || Date.now();
+                }
+                const sortCandidate = getTimestampSortValue(item.createdTimestamp);
+                if (sortCandidate) item.sortTimestamp = sortCandidate;
+                if (!item.sortTimestamp) item.sortTimestamp = Date.now();
+                return item;
+            });
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            syncPipelineInfrastructure();
+            if (isManagerMode && managerViewContext === 'scriptControl') renderManagerScriptControlLists(managerScriptControlSubContext);
         }
 
         function executeAuthenticatedRestoreAction(id) {
@@ -4544,7 +5486,364 @@
         applyProfessionalSectionTheme('scripts');
 
 
-        // Run Firebase Live Instance Setup Configurations
+
+
+        /* FINAL SCRIPT CONTROL LEDGER + EMPLOYEE MANUAL DELETE FIX */
+        function getScriptControlContextLabel(contextKey) {
+            const map = { active: 'Active List', ready: 'Ready List', archive: 'Archive Logs', pendingVideo: 'Pending Video', readyVideo: 'Ready Video' };
+            return map[contextKey] || contextKey;
+        }
+
+        function normalizeScriptControlHistoryTimestamp(value) {
+            return String(value || '').trim();
+        }
+
+        function getInferredScriptControlTimestamps(item, contextKey) {
+            if (!item) return [];
+            const values = [];
+            if (contextKey === 'active') values.push(item.createdTimestamp);
+            if (contextKey === 'ready') values.push(item.readyTimestamp);
+            if (contextKey === 'archive') values.push(item.completedTimestamp);
+            if (contextKey === 'pendingVideo') values.push(item.editStartClockTime || item.completedTimestamp);
+            if (contextKey === 'readyVideo') values.push(item.videoCreatedTimestamp || item.editEndClockTime);
+            return values.map(normalizeScriptControlHistoryTimestamp).filter(Boolean);
+        }
+
+        function ensureScriptControlHistoryForItem(item) {
+            if (!item) return item;
+            if (!item.scriptControlHistory || typeof item.scriptControlHistory !== 'object') item.scriptControlHistory = {};
+            ['active','ready','archive','pendingVideo','readyVideo'].forEach(contextKey => {
+                if (!Array.isArray(item.scriptControlHistory[contextKey])) item.scriptControlHistory[contextKey] = [];
+                getInferredScriptControlTimestamps(item, contextKey).forEach(ts => {
+                    if (!item.scriptControlHistory[contextKey].includes(ts)) item.scriptControlHistory[contextKey].push(ts);
+                });
+            });
+            return item;
+        }
+
+        function seedScriptControlHistoryLedger() {
+            if (!Array.isArray(pipelineDataStore)) return;
+            pipelineDataStore.forEach(item => ensureScriptControlHistoryForItem(item));
+        }
+
+        function recordScriptControlLedgerEntry(item, contextKey, timestampValue) {
+            if (!item || !contextKey) return item;
+            ensureScriptControlHistoryForItem(item);
+            const timestamp = normalizeScriptControlHistoryTimestamp(timestampValue || getCurrentTimestamp());
+            if (timestamp && !item.scriptControlHistory[contextKey].includes(timestamp)) item.scriptControlHistory[contextKey].push(timestamp);
+            return item;
+        }
+
+        function getScriptControlHistoryEntries(item, contextKey) {
+            ensureScriptControlHistoryForItem(item);
+            return Array.from(new Set([...(item.scriptControlHistory && item.scriptControlHistory[contextKey] ? item.scriptControlHistory[contextKey] : []), ...getInferredScriptControlTimestamps(item, contextKey)]))
+                .map(normalizeScriptControlHistoryTimestamp)
+                .filter(Boolean);
+        }
+
+        function getScriptControlSelectedDateValue() {
+            const input = document.getElementById('managerScriptControlDate');
+            return input ? input.value : '';
+        }
+
+        function doesScriptControlItemMatchSelectedDate(item, contextKey) {
+            const selectedDate = getScriptControlSelectedDateValue();
+            if (!selectedDate) return true;
+            return getScriptControlHistoryEntries(item, contextKey).some(ts => isDateWithinEmployeeRange(ts, selectedDate, selectedDate));
+        }
+
+        function getScriptControlLatestTimestampForContext(item, contextKey) {
+            const selectedDate = getScriptControlSelectedDateValue();
+            let entries = getScriptControlHistoryEntries(item, contextKey);
+            if (selectedDate) entries = entries.filter(ts => isDateWithinEmployeeRange(ts, selectedDate, selectedDate));
+            return entries.sort((a,b) => getTimestampSortValue(b) - getTimestampSortValue(a))[0] || getScriptControlDateTimestampForContext(item, contextKey) || item.createdTimestamp || '';
+        }
+
+        function getManagerScriptControlDataset(viewContext) {
+            seedScriptControlHistoryLedger();
+            return pipelineDataStore.filter(item => {
+                if (!item || item.scriptControlPurged) return false;
+                return getScriptControlHistoryEntries(item, viewContext).length > 0;
+            });
+        }
+
+        function filterScriptControlDatasetBySelectedDate(dataset, viewContext) {
+            return (dataset || []).filter(item => doesScriptControlItemMatchSelectedDate(item, viewContext));
+        }
+
+        function updateManagerScriptControlTabCounts() {
+            const tabMap = [
+                ['subTabMscActive', 'active', '📝 Active List'],
+                ['subTabMscReady', 'ready', '✅ Ready List'],
+                ['subTabMscArchive', 'archive', '🗃️ Archive Logs'],
+                ['subTabMscPendingVideo', 'pendingVideo', '🎬 Pending Video'],
+                ['subTabMscReadyVideo', 'readyVideo', '📼 Ready Video (Today)']
+            ];
+            tabMap.forEach(([id, contextKey, label]) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                const count = filterScriptControlDatasetBySelectedDate(getManagerScriptControlDataset(contextKey), contextKey).length;
+                btn.innerHTML = `${label}<br><span class="script-control-tab-count">${count}</span>`;
+            });
+        }
+
+        function renderManagerScriptControlLists(viewContext) {
+            const grid = document.getElementById('managerGridContainer');
+            const titleEl = document.getElementById('managerListTitle');
+            if (!grid || !titleEl) return;
+            grid.innerHTML = '';
+            titleEl.innerText = getManagerScriptControlTitle(viewContext);
+            ensureManagerScriptControlDateDefault();
+            seedScriptControlHistoryLedger();
+            updateManagerScriptControlTabCounts();
+            const dataset = filterScriptControlDatasetBySelectedDate(getManagerScriptControlDataset(viewContext), viewContext)
+                .sort((a, b) => getTimestampSortValue(getScriptControlLatestTimestampForContext(b, viewContext)) - getTimestampSortValue(getScriptControlLatestTimestampForContext(a, viewContext)));
+            if (dataset.length === 0) {
+                grid.innerHTML = `<div class="empty-status-text">No records matched loop constraints metrics bounds inside this script control layer.</div>`;
+                return;
+            }
+            dataset.forEach(item => grid.appendChild(buildManagerScriptControlCard(item, viewContext)));
+        }
+
+        const __scriptLedgerOriginalSaveDemoDataStateSnapshot = saveDemoDataStateSnapshot;
+        saveDemoDataStateSnapshot = function() {
+            seedScriptControlHistoryLedger();
+            return __scriptLedgerOriginalSaveDemoDataStateSnapshot();
+        };
+
+        const __scriptLedgerOriginalSyncPipelineInfrastructure = syncPipelineInfrastructure;
+        syncPipelineInfrastructure = function() {
+            seedScriptControlHistoryLedger();
+            return __scriptLedgerOriginalSyncPipelineInfrastructure();
+        };
+
+        const __scriptLedgerOriginalApplyManagerStatusChange = applyManagerStatusChange;
+        applyManagerStatusChange = function(id, nextStatus) {
+            const contextMap = { 'active-list': 'active', 'ready-list': 'ready', 'archive-logs': 'archive', 'pending-video': 'pendingVideo', 'ready-video': 'readyVideo' };
+            pipelineDataStore = pipelineDataStore.map(item => {
+                if (item.id === id && contextMap[nextStatus]) recordScriptControlLedgerEntry(item, contextMap[nextStatus], getCurrentTimestamp());
+                return item;
+            });
+            return __scriptLedgerOriginalApplyManagerStatusChange(id, nextStatus);
+        };
+
+        function getEmployeeManualOverrideKey(memberName) {
+            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
+            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
+            return `${startDateValue}|${endDateValue}|all|${String(memberName || '').trim()}`;
+        }
+
+        function getEmployeeManualOverrideForCurrentFilters(memberName) {
+            const store = appConfigStore.employeeManualOverrides || {};
+            const mainKey = getEmployeeManualOverrideKey(memberName);
+            if (store[mainKey]) return store[mainKey];
+            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
+            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
+            const productValue = (document.getElementById('employeeProductFilter') || {}).value || 'all';
+            const legacyKey = `${startDateValue}|${endDateValue}|${productValue}|${String(memberName || '').trim()}`;
+            return store[legacyKey] || null;
+        }
+
+        function getManualAdjustedEmployeeDisplay(memberName, info) {
+            const manualOverride = getEmployeeManualOverrideForCurrentFilters(memberName);
+            const selectedProduct = (document.getElementById('employeeProductFilter') || {}).value || 'all';
+            const filterProducts = (products) => {
+                if (selectedProduct === 'all') return products;
+                const filtered = {};
+                Object.entries(products || {}).forEach(([product, pInfo]) => {
+                    if (String(product) === String(selectedProduct) || doesScriptMatchSelectedProduct({ title: product, assignedProduct: product, body: '' }, selectedProduct)) filtered[product] = pInfo;
+                });
+                return filtered;
+            };
+            const baseProducts = {};
+            const rawProducts = (info && info.products) ? info.products : {};
+            Object.keys(rawProducts).forEach(product => {
+                baseProducts[product] = { count: Number(rawProducts[product].count || 0), seconds: Number(rawProducts[product].seconds || 0) };
+            });
+            let finalProducts = baseProducts;
+            if (manualOverride) {
+                finalProducts = {};
+                Object.entries(manualOverride.products || {}).forEach(([product, productInfo]) => {
+                    const count = Number(productInfo.count || 0);
+                    const seconds = Number(productInfo.seconds || 0);
+                    if (count > 0 || seconds > 0) finalProducts[product] = { count, seconds };
+                });
+                const savedAtMs = getTimestampSortValue(manualOverride.savedAt);
+                if (savedAtMs && Array.isArray((info || {}).scripts)) {
+                    info.scripts.forEach(scriptItem => {
+                        const videoMs = getTimestampSortValue(scriptItem.videoCreatedTimestamp || scriptItem.editEndClockTime);
+                        if (videoMs && videoMs > savedAtMs) {
+                            const product = scriptItem.assignedProduct || 'None';
+                            finalProducts[product] = finalProducts[product] || { count: 0, seconds: 0 };
+                            finalProducts[product].count += 1;
+                            finalProducts[product].seconds += durationStringToSeconds(scriptItem.totalElapsedTimeFormatted);
+                        }
+                    });
+                }
+            }
+            finalProducts = filterProducts(finalProducts);
+            const count = Object.values(finalProducts).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
+            const seconds = Object.values(finalProducts).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
+            return { count, seconds, products: finalProducts };
+        }
+
+        function ensureManualEmployeeOverridesInCurrentSummary(memberSummary) {
+            const store = appConfigStore.employeeManualOverrides || {};
+            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
+            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
+            const productValue = (document.getElementById('employeeProductFilter') || {}).value || 'all';
+            const memberValue = (document.getElementById('employeeMemberFilter') || {}).value || 'all';
+            Object.keys(store).forEach(key => {
+                const parts = key.split('|');
+                if (parts.length < 4) return;
+                const [keyStart, keyEnd, keyProduct, ...memberParts] = parts;
+                const memberName = memberParts.join('|');
+                if (keyStart !== startDateValue || keyEnd !== endDateValue) return;
+                if (memberValue !== 'all' && memberName !== memberValue) return;
+                const override = store[key] || {};
+                if (productValue !== 'all' && !(override.products || {})[productValue] && keyProduct !== productValue) return;
+                if (!memberSummary[memberName]) memberSummary[memberName] = { count: 0, seconds: 0, products: {}, scripts: [] };
+            });
+        }
+
+        function applyEmployeeManualOverrideSave(memberName, productMap) {
+            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
+            const overrideKey = getEmployeeManualOverrideKey(memberName);
+            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
+            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
+            appConfigStore.employeeManualOverrides[overrideKey] = {
+                count: finalCount,
+                seconds: finalSeconds,
+                time: secondsToDurationString(finalSeconds),
+                products: productMap,
+                savedAt: getCurrentTimestamp()
+            };
+            pendingEmployeeManualSavePayload = null;
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            renderEmployeeUpdateReport();
+        }
+
+        function saveEmployeeManualEdit(memberName) {
+            let productMap = {};
+            try { productMap = collectManualEmployeeProductMap(); }
+            catch (error) { alert('Please enter product time in HH:MM:SS format.'); return; }
+            const override = getEmployeeManualOverrideForCurrentFilters(memberName);
+            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
+            const previousProducts = {};
+            if (override && override.products) {
+                Object.assign(previousProducts, override.products);
+            } else {
+                memberDataset.forEach(item => {
+                    const product = item.assignedProduct || 'None';
+                    previousProducts[product] = previousProducts[product] || { count: 0, seconds: 0 };
+                    previousProducts[product].count += 1;
+                    previousProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
+                });
+            }
+            const removedProducts = Object.keys(previousProducts).filter(product => !productMap[product]);
+            if (removedProducts.length > 0) {
+                pendingEmployeeManualSavePayload = { memberName, productMap };
+                showModalDialogue(
+                    'Are you sure to delete this?',
+                    `This will remove ${removedProducts.map(escapeHTML).join(', ')} from Product Report and Employee Report count/time.`,
+                    '',
+                    `<button class="btn-alert btn-cancel-alert" onclick="pendingEmployeeManualSavePayload=null; dismissModalOverlay(); renderEmployeeUpdateReport();">No</button>
+                     <button class="btn-alert btn-confirm-save" onclick="confirmPendingEmployeeManualDeleteSave()">Yes</button>`
+                );
+                return;
+            }
+            applyEmployeeManualOverrideSave(memberName, productMap);
+        }
+
+        // --- FINAL LOCAL STORAGE MANUAL DELETE FIX ---
+        function addManualEmployeeProductRow(selectedProduct = '', countValue = 0, secondsValue = 0) {
+            const host = document.getElementById('manualEmpProductRows');
+            if (!host) return;
+            const row = document.createElement('div');
+            row.className = 'manualEmpProductRow';
+            row.style.cssText = 'display:grid; grid-template-columns: 1.4fr .7fr 1fr auto; gap:8px; margin-bottom:8px; align-items:center;';
+            row.innerHTML = `
+                <select class="input-control manualEmpProductSelect">${buildManualProductDropdownOptions(selectedProduct)}</select>
+                <input type="number" min="0" class="input-control manualEmpProductCount" value="${escapeAttr(String(countValue || 0))}" placeholder="Qty">
+                <input class="input-control manualEmpProductTime" value="${escapeAttr(secondsToDurationString(secondsValue || 0))}" placeholder="00:00:00">
+                <button type="button" class="btn-pro btn-delete" title="Delete" onclick="this.closest('.manualEmpProductRow').remove()">🗑️</button>
+            `;
+            host.appendChild(row);
+        }
+
+        function collectManualEmployeeProductMap() {
+            const productMap = {};
+            const rows = Array.from(document.querySelectorAll('.manualEmpProductRow'));
+            for (const row of rows) {
+                const product = ((row.querySelector('.manualEmpProductSelect') || {}).value || '').trim();
+                const count = Math.max(0, Number((row.querySelector('.manualEmpProductCount') || {}).value || 0));
+                const timeText = (((row.querySelector('.manualEmpProductTime') || {}).value || '00:00:00').trim() || '00:00:00');
+                if (!product) continue;
+                if (!/^\d{1,3}:\d{2}:\d{2}$/.test(timeText)) throw new Error('INVALID_PRODUCT_TIME');
+                const seconds = durationStringToSeconds(timeText);
+                if (count > 0 || seconds > 0) {
+                    if (!productMap[product]) productMap[product] = { count: 0, seconds: 0, time: '00:00:00' };
+                    productMap[product].count += count;
+                    productMap[product].seconds += seconds;
+                    productMap[product].time = secondsToDurationString(productMap[product].seconds);
+                }
+            }
+            return productMap;
+        }
+
+        function saveEmployeeManualEdit(memberName) {
+            let productMap = {};
+            try { productMap = collectManualEmployeeProductMap(); }
+            catch (error) { alert('Please enter product time in HH:MM:SS format.'); return; }
+
+            const override = getEmployeeManualOverrideForCurrentFilters(memberName);
+            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
+            const previousProducts = {};
+            if (override && override.products) {
+                Object.assign(previousProducts, override.products);
+            } else {
+                memberDataset.forEach(item => {
+                    const product = item.assignedProduct || 'None';
+                    previousProducts[product] = previousProducts[product] || { count: 0, seconds: 0 };
+                    previousProducts[product].count += 1;
+                    previousProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
+                });
+            }
+            const removedProducts = Object.keys(previousProducts).filter(product => !productMap[product] && (Number((previousProducts[product] || {}).count || 0) > 0 || Number((previousProducts[product] || {}).seconds || 0) > 0));
+            if (removedProducts.length > 0) {
+                pendingEmployeeManualSavePayload = { memberName, productMap };
+                showModalDialogue(
+                    'Are you sure to delete this?',
+                    `This will remove ${removedProducts.map(escapeHTML).join(', ')} from Product Report and Employee Report count/time.`,
+                    '',
+                    `<button class="btn-alert btn-cancel-alert" onclick="pendingEmployeeManualSavePayload=null; dismissModalOverlay(); renderEmployeeUpdateReport();">No</button>
+                     <button class="btn-alert btn-confirm-save" onclick="confirmPendingEmployeeManualDeleteSave()">Yes</button>`
+                );
+                return;
+            }
+            applyEmployeeManualOverrideSave(memberName, productMap);
+        }
+
+        function applyEmployeeManualOverrideSave(memberName, productMap) {
+            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
+            const overrideKey = getEmployeeManualOverrideKey(memberName);
+            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
+            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
+            appConfigStore.employeeManualOverrides[overrideKey] = {
+                count: finalCount,
+                seconds: finalSeconds,
+                time: secondsToDurationString(finalSeconds),
+                products: productMap,
+                savedAt: getCurrentTimestamp()
+            };
+            pendingEmployeeManualSavePayload = null;
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            setTimeout(renderEmployeeUpdateReport, 60);
+        }
+
+        // Run Local Storage Test Mode Setup Configurations
         startRealtimeFirebaseSync();
         setTimeout(triggerActiveScreenAnimation, 60);
     
@@ -4626,7 +5925,7 @@
         triggerSmoothListAnimation = function() { return; };
 
         function getActiveViewSignature() {
-            if (isManagerMode) return 'manager:' + managerViewContext + ':' + managerTrashSubContext;
+            if (isManagerMode) return 'manager:' + managerViewContext + ':' + managerTrashSubContext + ':' + managerScriptControlSubContext;
             if (isVideoDashboardMode) return 'video:' + videoViewContext;
             if (isTrashWorkspaceMode) return 'trash:' + trashViewContext;
             return 'scripts:' + executionViewContext;
@@ -4712,6 +6011,12 @@
         const __hardFinalChangeManagerTrashSubView = changeManagerTrashSubView;
         changeManagerTrashSubView = function(view) {
             __hardFinalChangeManagerTrashSubView(view);
+            runManualNavigationAnimationOnce();
+        };
+
+        const __hardFinalChangeManagerScriptControlSubView = changeManagerScriptControlSubView;
+        changeManagerScriptControlSubView = function(view) {
+            __hardFinalChangeManagerScriptControlSubView(view);
             runManualNavigationAnimationOnce();
         };
 
