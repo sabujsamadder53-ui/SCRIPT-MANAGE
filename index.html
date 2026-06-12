@@ -1523,15 +1523,6 @@
             color: #9a3412 !important;
         }
 
-
-        .script-control-tab-count {
-            display:block;
-            margin-top:3px;
-            font-size:14px;
-            font-weight:900;
-            line-height:1;
-        }
-
     </style>
     <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore-compat.js"></script>
@@ -1713,10 +1704,9 @@
                     <div>
                         <label style="font-size:12px; font-weight:700; color:#64748b; display:block; margin-bottom:5px;">Date Range</label>
                         <div style="display:flex; gap:8px; align-items:center;">
-                            <input type="hidden" id="employeeStartDate">
-                            <input type="hidden" id="employeeEndDate">
-                            <input type="text" id="employeeRangeDisplay" class="input-control" value="" readonly onclick="openEmployeeRangeCalendar()" style="cursor:pointer; min-width:230px;" placeholder="Select date/range">
-                            <button type="button" class="btn-pro btn-confirm-save" onclick="openEmployeeRangeCalendar()">📅</button>
+                            <input type="date" id="employeeStartDate" class="input-control" onchange="renderEmployeeUpdateReport()">
+                            <span style="font-size:12px; font-weight:800; color:#64748b; white-space:nowrap;">to</span>
+                            <input type="date" id="employeeEndDate" class="input-control" onchange="renderEmployeeUpdateReport()">
                             <button type="button" class="btn-pro btn-view" onclick="resetEmployeeUpdateDateRangeToToday()">Today</button>
                         </div>
                     </div>
@@ -1852,24 +1842,21 @@
     </div>
 
     <script>
-        // --- FIREBASE + LOCAL BACKUP STORAGE ENGINE (GITHUB READY VERSION) ---
-        // Paste your Firebase Web App config below. If config is not filled, the app safely falls back to LocalStorage.
-        const FIREBASE_CONFIG = {
-            apiKey: "PASTE_FIREBASE_API_KEY_HERE",
-            authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-            projectId: "PASTE_PROJECT_ID",
-            storageBucket: "PASTE_PROJECT_ID.appspot.com",
-            messagingSenderId: "PASTE_MESSAGING_SENDER_ID",
-            appId: "PASTE_FIREBASE_APP_ID"
+        // --- FIREBASE CLOUD STORAGE ENGINES (GITHUB LIVE VERSION) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCRIqpB5zu6hOoMIUrJCZpZcYgDXMWvbpY",
+            authDomain: "script-manage-fa4a9.firebaseapp.com",
+            projectId: "script-manage-fa4a9",
+            storageBucket: "script-manage-fa4a9.firebasestorage.app",
+            messagingSenderId: "895167976965",
+            appId: "1:895167976965:web:fa8b3a8b09c74771eae6c",
+            measurementId: "G-8JYZJQL1WF"
         };
-        const FIREBASE_COLLECTION_NAME = "scriptDashboard";
-        const FIREBASE_DOC_ID = "mainData";
-        const LOCAL_STORAGE_DATA_KEY = "script_dashboard_local_pipeline_data_v1";
-        const LOCAL_STORAGE_CONFIG_KEY = "script_dashboard_local_app_config_v1";
-        let firebaseDbInstance = null;
-        let firestoreUnsubscribe = null;
-        let isApplyingRemoteSnapshot = false;
-        let firebaseInitialRenderDone = false;
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const scriptsRef = db.collection("scripts");
+        const configRef = db.collection("settings").doc("appConfig");
 
         let pipelineDataStore = [];
         const DEFAULT_ACCESS_USERS = [
@@ -1882,12 +1869,11 @@
             members: ["Sayan", "Sourab", "Abhi", "Sabuj"],
             memberColors: { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" },
             users: DEFAULT_ACCESS_USERS,
-            employeeManualOverrides: {},
-            scriptControlHistoryLedger: {}
+            employeeManualOverrides: {}
         };
 
-        let firebaseDataReady = true;
-        let firebaseConfigReady = true;
+        let firebaseDataReady = false;
+        let firebaseConfigReady = false;
         let firebaseSaveTimer = null;
 
         let executionViewContext = 'active';
@@ -1946,6 +1932,7 @@
                 if (managerViewContext === 'employee') triggerSmoothSectionAnimation('managerEmployeeUpdateSection');
                 if (managerViewContext === 'lists') triggerSmoothSectionAnimation('managerDropdownsConfigSection');
                 if (managerViewContext === 'access') triggerSmoothSectionAnimation('managerAccessControlSection');
+                if (managerViewContext === 'access') triggerSmoothSectionAnimation('managerAccessControlSection');
                 if (managerViewContext === 'trash') triggerSmoothSectionAnimation('managerListSection');
             } else if (isVideoDashboardMode) {
                 triggerSmoothSectionAnimation('videoWorkspace');
@@ -1960,150 +1947,63 @@
         }
 
         // --- FIREBASE DATA SYNC PROCEDURES ---
-        function isFirebaseConfigFilled() {
-            try {
-                return !!(
-                    FIREBASE_CONFIG &&
-                    FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).includes('PASTE_') &&
-                    FIREBASE_CONFIG.projectId && !String(FIREBASE_CONFIG.projectId).includes('PASTE_') &&
-                    FIREBASE_CONFIG.appId && !String(FIREBASE_CONFIG.appId).includes('PASTE_')
-                );
-            } catch (error) { return false; }
-        }
-
-        function normalizeStoredConfigPayload(data) {
-            data = data || {};
-            return {
-                products: Array.isArray(data.products) && data.products.length ? data.products : ["Green Tea", "Hair Oil", "Height Booster"],
-                productColors: data.productColors || { "Green Tea": "#10b981", "Hair Oil": "#3b82f6", "Height Booster": "#8b5cf6" },
-                members: Array.isArray(data.members) && data.members.length ? data.members : ["Sayan", "Sourab", "Abhi", "Sabuj"],
-                memberColors: data.memberColors || { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" },
-                users: Array.isArray(data.users) && data.users.length ? data.users : DEFAULT_ACCESS_USERS,
-                employeeManualOverrides: data.employeeManualOverrides || {},
-                scriptControlHistoryLedger: data.scriptControlHistoryLedger || {}
-            };
-        }
-
-        function applyRemoteOrLocalPayload(payload) {
-            payload = payload || {};
-            pipelineDataStore = Array.isArray(payload.pipelineDataStore) ? payload.pipelineDataStore : (Array.isArray(payload.pipeline) ? payload.pipeline : []);
-            appConfigStore = normalizeStoredConfigPayload(payload.appConfigStore || payload.config || {});
-        }
-
-        function writeLocalBackupSnapshot() {
-            try {
-                localStorage.setItem(LOCAL_STORAGE_DATA_KEY, JSON.stringify(pipelineDataStore || []));
-                localStorage.setItem(LOCAL_STORAGE_CONFIG_KEY, JSON.stringify(appConfigStore || {}));
-            } catch (error) {
-                console.error("Local backup save error:", error);
-            }
-        }
-
-        function readLocalBackupSnapshot() {
-            try {
-                const savedPipeline = localStorage.getItem(LOCAL_STORAGE_DATA_KEY);
-                const savedConfig = localStorage.getItem(LOCAL_STORAGE_CONFIG_KEY);
-                if (savedPipeline) pipelineDataStore = JSON.parse(savedPipeline) || [];
-                if (savedConfig) appConfigStore = normalizeStoredConfigPayload(JSON.parse(savedConfig) || {});
-            } catch (error) {
-                console.error("Local backup load error:", error);
-            }
-        }
-
-        function getFirebaseMainDocRef() {
-            if (!firebaseDbInstance) return null;
-            return firebaseDbInstance.collection(FIREBASE_COLLECTION_NAME).doc(FIREBASE_DOC_ID);
-        }
-
         function saveDemoDataStateSnapshot() {
-            try {
-                seedScriptControlHistoryLedger && seedScriptControlHistoryLedger();
-            } catch (error) {}
+            if (!firebaseDataReady) return;
 
-            writeLocalBackupSnapshot();
-
-            if (isApplyingRemoteSnapshot) return;
             if (firebaseSaveTimer) clearTimeout(firebaseSaveTimer);
-            firebaseSaveTimer = setTimeout(() => {
-                const docRef = getFirebaseMainDocRef();
-                if (!docRef) return;
-                const payload = {
-                    pipelineDataStore: pipelineDataStore || [],
-                    appConfigStore: appConfigStore || {},
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAtLocal: new Date().toISOString()
-                };
-                docRef.set(payload, { merge: true }).catch(error => {
+            firebaseSaveTimer = setTimeout(async () => {
+                try {
+                    await configRef.set(appConfigStore, { merge: true });
+
+                    const batch = db.batch();
+                    pipelineDataStore.forEach(item => {
+                        if (!item || !item.id) return;
+                        const cleanItem = { ...item };
+                        delete cleanItem.__removeCompletely;
+                        batch.set(scriptsRef.doc(item.id), cleanItem, { merge: true });
+                    });
+                    await batch.commit();
+                } catch (error) {
                     console.error("Firebase save error:", error);
-                    alert("Firebase save error. Check config, Firestore rules, and internet connection. Local backup is still saved in this browser.");
-                });
+                    alert("Firebase save error. Please check internet connection and Firestore rules.");
+                }
             }, 120);
         }
 
         function startRealtimeFirebaseSync() {
-            readLocalBackupSnapshot();
-            ensureDefaultAccessUsers();
-
-            if (!isFirebaseConfigFilled() || typeof firebase === 'undefined') {
-                console.warn("Firebase config is not filled. Running with LocalStorage backup only.");
+            scriptsRef.orderBy("sortTimestamp", "desc").onSnapshot(snapshot => {
+                pipelineDataStore = snapshot.docs.map(doc => doc.data());
                 firebaseDataReady = true;
-                firebaseConfigReady = true;
-                initializeAuthenticationGate();
                 syncPipelineInfrastructure();
-                return;
-            }
+            }, error => {
+                console.error("Firebase scripts load error:", error);
+                alert("Firebase data load error. Please check Firestore rules/config.");
+            });
 
-            try {
-                if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
-                firebaseDbInstance = firebase.firestore();
-                firebaseDataReady = false;
-                firebaseConfigReady = false;
-                const docRef = getFirebaseMainDocRef();
-
-                firestoreUnsubscribe = docRef.onSnapshot(snapshot => {
-                    isApplyingRemoteSnapshot = true;
-                    try {
-                        if (snapshot.exists) {
-                            applyRemoteOrLocalPayload(snapshot.data() || {});
-                            writeLocalBackupSnapshot();
-                        } else {
-                            // First deploy: create cloud document from current local/default state.
-                            docRef.set({
-                                pipelineDataStore: pipelineDataStore || [],
-                                appConfigStore: appConfigStore || {},
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                                updatedAtLocal: new Date().toISOString()
-                            }, { merge: true });
-                        }
-                        ensureDefaultAccessUsers();
-                        firebaseDataReady = true;
-                        firebaseConfigReady = true;
-
-                        if (!firebaseInitialRenderDone) {
-                            firebaseInitialRenderDone = true;
-                            initializeAuthenticationGate();
-                        }
-                        syncPipelineInfrastructure();
-                    } catch (error) {
-                        console.error("Firebase snapshot apply error:", error);
-                    } finally {
-                        setTimeout(() => { isApplyingRemoteSnapshot = false; }, 0);
-                    }
-                }, error => {
-                    console.error("Firebase realtime sync error:", error);
-                    firebaseDataReady = true;
+            configRef.onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    appConfigStore = {
+                        products: data.products || ["Green Tea", "Hair Oil", "Height Booster"],
+                        productColors: data.productColors || { "Green Tea": "#10b981", "Hair Oil": "#3b82f6", "Height Booster": "#8b5cf6" },
+                        members: data.members || ["Sayan", "Sourab", "Abhi", "Sabuj"],
+                        memberColors: data.memberColors || { "Sayan": "#ec4899", "Sourab": "#f59e0b", "Abhi": "#06b6d4", "Sabuj": "#10b981" },
+                        users: Array.isArray(data.users) && data.users.length ? data.users : DEFAULT_ACCESS_USERS,
+                        employeeManualOverrides: data.employeeManualOverrides || {}
+                    };
+                    ensureDefaultAccessUsers();
+                    firebaseConfigReady = true;
+                    if (!currentUserSession) initializeAuthenticationGate();
+                    else updateAccessControlledHeaderState();
+                    syncPipelineInfrastructure();
+                } else {
+                    configRef.set(appConfigStore);
                     firebaseConfigReady = true;
                     initializeAuthenticationGate();
-                    syncPipelineInfrastructure();
-                    alert("Firebase realtime sync error. App is running from local backup. Check Firestore rules/config.");
-                });
-            } catch (error) {
-                console.error("Firebase initialization error:", error);
-                firebaseDataReady = true;
-                firebaseConfigReady = true;
-                initializeAuthenticationGate();
-                syncPipelineInfrastructure();
-            }
+                }
+            }, error => {
+                console.error("Firebase config load error:", error);
+            });
         }
 
 
@@ -2311,19 +2211,6 @@
 
         function getTodayDateStringMatch() {
             return new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
-        }
-
-        function toInputDateString(dateValue) {
-            const sourceDate = dateValue instanceof Date ? dateValue : new Date(dateValue || Date.now());
-            const indiaParts = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'Asia/Kolkata',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }).formatToParts(sourceDate);
-            const map = {};
-            indiaParts.forEach(part => { map[part.type] = part.value; });
-            return `${map.year}-${map.month}-${map.day}`;
         }
 
         function extractDateStringFromTimestamp(timestampValue) {
@@ -3894,154 +3781,11 @@
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
         }
 
-
-        let employeeRangeTempStartDate = '';
-        let employeeRangeTempEndDate = '';
-        let employeeRangeWaitingForEnd = false;
-        let employeeCalendarViewDate = new Date();
-
-        function formatEmployeeInputDateForDisplay(dateValue) {
-            if (!dateValue) return '';
-            const parts = String(dateValue).split('-');
-            if (parts.length !== 3) return dateValue;
-            return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-
-        function getEmployeeRangeDisplayText(startValue, endValue) {
-            const startText = formatEmployeeInputDateForDisplay(startValue);
-            const endText = formatEmployeeInputDateForDisplay(endValue || startValue);
-            if (!startValue) return '';
-            return startText === endText ? startText : `${startText} to ${endText}`;
-        }
-
-        function syncEmployeeRangeDisplayFromHidden() {
-            const startInput = document.getElementById('employeeStartDate');
-            const endInput = document.getElementById('employeeEndDate');
-            const display = document.getElementById('employeeRangeDisplay');
-            if (!display || !startInput) return;
-            const startValue = startInput.value || '';
-            const endValue = (endInput && endInput.value) ? endInput.value : startValue;
-            employeeRangeTempStartDate = startValue;
-            employeeRangeTempEndDate = endValue;
-            employeeRangeWaitingForEnd = false;
-            display.value = getEmployeeRangeDisplayText(startValue, endValue);
-        }
-
-        function openEmployeeRangeCalendar() {
-            const startInput = document.getElementById('employeeStartDate');
-            const endInput = document.getElementById('employeeEndDate');
-            const todayIso = toInputDateString(new Date());
-            employeeRangeTempStartDate = (startInput && startInput.value) ? startInput.value : todayIso;
-            employeeRangeTempEndDate = (endInput && endInput.value) ? endInput.value : employeeRangeTempStartDate;
-            employeeRangeWaitingForEnd = false;
-            employeeCalendarViewDate = parseInputDateToLocalDate(employeeRangeTempStartDate) || new Date();
-            showModalDialogue(
-                'Select Employee Report Date',
-                'Ek date select karo ya start date aur end date select karke range banao. Apply dabane par report update hoga.',
-                `<div id="employeeCustomCalendarHost"></div>`,
-                `<button class="btn-alert btn-cancel-alert" onclick="dismissModalOverlay()">Cancel</button>
-                 <button class="btn-alert btn-confirm-save" onclick="applyEmployeeRangeCalendarSelection()">Apply</button>`
-            );
-            renderEmployeeCustomCalendar();
-        }
-
-        function shiftEmployeeCalendarMonth(delta) {
-            employeeCalendarViewDate = new Date(employeeCalendarViewDate.getFullYear(), employeeCalendarViewDate.getMonth() + delta, 1);
-            renderEmployeeCustomCalendar();
-        }
-
-        function pickEmployeeCalendarDate(isoDate) {
-            if (!employeeRangeWaitingForEnd || !employeeRangeTempStartDate) {
-                employeeRangeTempStartDate = isoDate;
-                employeeRangeTempEndDate = isoDate;
-                employeeRangeWaitingForEnd = true;
-            } else {
-                employeeRangeTempEndDate = isoDate;
-                employeeRangeWaitingForEnd = false;
-                const first = parseInputDateToLocalDate(employeeRangeTempStartDate);
-                const second = parseInputDateToLocalDate(employeeRangeTempEndDate);
-                if (first && second && first.getTime() > second.getTime()) {
-                    const swapValue = employeeRangeTempStartDate;
-                    employeeRangeTempStartDate = employeeRangeTempEndDate;
-                    employeeRangeTempEndDate = swapValue;
-                }
-            }
-            renderEmployeeCustomCalendar();
-        }
-
-        function renderEmployeeCustomCalendar() {
-            const host = document.getElementById('employeeCustomCalendarHost');
-            if (!host) return;
-            const year = employeeCalendarViewDate.getFullYear();
-            const month = employeeCalendarViewDate.getMonth();
-            const monthName = employeeCalendarViewDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-            const firstDay = new Date(year, month, 1);
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const startOffset = firstDay.getDay();
-            const startMs = parseInputDateToLocalDate(employeeRangeTempStartDate)?.getTime() || 0;
-            const endMs = parseInputDateToLocalDate(employeeRangeTempEndDate || employeeRangeTempStartDate)?.getTime() || startMs;
-            let dayCells = '';
-            ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => { dayCells += `<div style="font-size:11px;font-weight:900;color:#64748b;text-align:center;padding:6px 0;">${d}</div>`; });
-            for (let i = 0; i < startOffset; i++) dayCells += `<div></div>`;
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateObj = new Date(year, month, day);
-                const iso = toInputDateString(dateObj);
-                const ms = dateObj.getTime();
-                const selectedEdge = iso === employeeRangeTempStartDate || iso === employeeRangeTempEndDate;
-                const inRange = startMs && endMs && ms >= Math.min(startMs, endMs) && ms <= Math.max(startMs, endMs);
-                const bg = selectedEdge ? '#3b82f6' : (inRange ? '#dbeafe' : '#ffffff');
-                const color = selectedEdge ? '#ffffff' : '#0f172a';
-                dayCells += `<button type="button" onclick="pickEmployeeCalendarDate('${iso}')" style="border:1px solid ${selectedEdge ? '#3b82f6' : '#e2e8f0'};background:${bg};color:${color};border-radius:8px;padding:8px 0;font-weight:900;cursor:pointer;">${day}</button>`;
-            }
-            const rangeText = employeeRangeWaitingForEnd ? `${formatEmployeeInputDateForDisplay(employeeRangeTempStartDate)} to ...` : getEmployeeRangeDisplayText(employeeRangeTempStartDate, employeeRangeTempEndDate);
-            host.innerHTML = `
-                <div style="width:100%;max-width:340px;margin:0 auto;text-align:left;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                        <button type="button" class="btn-pro btn-view" onclick="shiftEmployeeCalendarMonth(-1)">←</button>
-                        <div style="font-weight:900;color:#0f172a;">${monthName}</div>
-                        <button type="button" class="btn-pro btn-view" onclick="shiftEmployeeCalendarMonth(1)">→</button>
-                    </div>
-                    <div style="font-size:12px;font-weight:800;color:#2563eb;text-align:center;margin-bottom:10px;min-height:18px;">${escapeHTML(rangeText || 'Select date')}</div>
-                    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">${dayCells}</div>
-                    <div style="font-size:11px;color:#64748b;font-weight:700;margin-top:10px;text-align:center;">Single date ke liye same date select karke Apply kar sakte ho.</div>
-                </div>`;
-        }
-
-        function handleEmployeeRangeCalendarPick() {
-            openEmployeeRangeCalendar();
-        }
-
-        function applyEmployeeRangeCalendarSelection() {
-            const startInput = document.getElementById('employeeStartDate');
-            const endInput = document.getElementById('employeeEndDate');
-            if (!startInput || !endInput) return;
-            if (!employeeRangeTempStartDate) {
-                const todayIso = toInputDateString(new Date());
-                employeeRangeTempStartDate = todayIso;
-                employeeRangeTempEndDate = todayIso;
-            }
-            if (!employeeRangeTempEndDate) employeeRangeTempEndDate = employeeRangeTempStartDate;
-            const first = parseInputDateToLocalDate(employeeRangeTempStartDate);
-            const second = parseInputDateToLocalDate(employeeRangeTempEndDate);
-            if (first && second && first.getTime() > second.getTime()) {
-                const swapValue = employeeRangeTempStartDate;
-                employeeRangeTempStartDate = employeeRangeTempEndDate;
-                employeeRangeTempEndDate = swapValue;
-            }
-            startInput.value = employeeRangeTempStartDate;
-            endInput.value = employeeRangeTempEndDate;
-            syncEmployeeRangeDisplayFromHidden();
-            dismissModalOverlay();
-            renderEmployeeUpdateReport();
-        }
-
         function prepareEmployeeUpdateControls() {
             const startInput = document.getElementById('employeeStartDate');
             const endInput = document.getElementById('employeeEndDate');
-            const todayIso = toInputDateString(new Date());
-            if (startInput && !startInput.value) startInput.value = todayIso;
-            if (endInput && !endInput.value) endInput.value = startInput ? (startInput.value || todayIso) : todayIso;
-            syncEmployeeRangeDisplayFromHidden();
+            if (startInput && !startInput.value) startInput.valueAsDate = new Date();
+            if (endInput && !endInput.value) endInput.valueAsDate = new Date();
 
             const memberFilter = document.getElementById('employeeMemberFilter');
             const productFilter = document.getElementById('employeeProductFilter');
@@ -4067,8 +3811,7 @@
             return pipelineDataStore.filter(item => {
                 if (item.isDeleted || item.videoLogPurged) return false;
                 if (item.stage !== 'completed' || item.videoStage !== 'ready') return false;
-                const employeeDateStamp = item.videoCreatedTimestamp || item.editEndClockTime || item.completedTimestamp || item.readyTimestamp || item.createdTimestamp;
-                if (!isDateWithinEmployeeRange(employeeDateStamp, startDateValue, endDateValue)) return false;
+                if (!isDateWithinEmployeeRange(item.videoCreatedTimestamp, startDateValue, endDateValue)) return false;
                 if (memberValue !== 'all' && item.assignedMember !== memberValue) return false;
                 if (productValue !== 'all' && !doesScriptMatchSelectedProduct(item, productValue)) return false;
                 return true;
@@ -4325,6 +4068,7 @@
                         </div>
                     </div>
                     <div class="row-buttons" style="flex-direction:column; align-items:stretch; min-width:110px;">
+                        <button class="btn-pro btn-manual-edit" onclick="openProductManualEmployeeEdit('${escapeJSString(product)}')">Edit</button>
                         <button class="btn-pro btn-view" onclick="document.getElementById('employeeReportMode').value='scripts'; document.getElementById('employeeProductFilter').value='${escapeAttr(product)}'; setEmployeeReportMode('scripts');">View Scripts</button>
                     </div>
                 `;
@@ -4364,7 +4108,7 @@
                 <select class="input-control manualEmpProductSelect">${buildManualProductDropdownOptions(selectedProduct)}</select>
                 <input type="number" min="0" class="input-control manualEmpProductCount" value="${escapeAttr(String(countValue || 0))}" placeholder="Qty">
                 <input class="input-control manualEmpProductTime" value="${escapeAttr(secondsToDurationString(secondsValue || 0))}" placeholder="00:00:00">
-                <button type="button" class="btn-pro btn-delete" title="Delete" onclick="this.closest('.manualEmpProductRow').remove()">🗑️</button>
+                <button type="button" class="btn-pro btn-delete" onclick="this.closest('.manualEmpProductRow').remove()">×</button>
             `;
             host.appendChild(row);
         }
@@ -4487,34 +4231,6 @@
             }
         }
 
-        let pendingEmployeeManualSavePayload = null;
-
-        function applyEmployeeManualOverrideSave(memberName, productMap) {
-            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
-            const overrideKey = getEmployeeManualOverrideKey(memberName);
-            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
-            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
-
-            // Keep even empty manual override so deleted manual/auto product rows do not come back from base script data.
-            appConfigStore.employeeManualOverrides[overrideKey] = {
-                count: finalCount,
-                seconds: finalSeconds,
-                time: secondsToDurationString(finalSeconds),
-                products: productMap,
-                savedAt: getCurrentTimestamp()
-            };
-
-            pendingEmployeeManualSavePayload = null;
-            dismissModalOverlay();
-            saveDemoDataStateSnapshot();
-            renderEmployeeUpdateReport();
-        }
-
-        function confirmPendingEmployeeManualDeleteSave() {
-            if (!pendingEmployeeManualSavePayload) return;
-            applyEmployeeManualOverrideSave(pendingEmployeeManualSavePayload.memberName, pendingEmployeeManualSavePayload.productMap);
-        }
-
         function saveEmployeeManualEdit(memberName) {
             let productMap = {};
             try {
@@ -4527,36 +4243,27 @@
             appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
             const overrideKey = getEmployeeManualOverrideKey(memberName);
             const previousOverride = appConfigStore.employeeManualOverrides[overrideKey] || null;
-            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
-            const previousProducts = {};
-
-            if (previousOverride && previousOverride.products) {
-                Object.assign(previousProducts, previousOverride.products);
-            } else {
-                memberDataset.forEach(item => {
-                    const product = item.assignedProduct || 'None';
-                    previousProducts[product] = previousProducts[product] || { count: 0, seconds: 0 };
-                    previousProducts[product].count += 1;
-                    previousProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
-                });
-            }
-
+            const previousProducts = previousOverride && previousOverride.products ? previousOverride.products : {};
             const removedProducts = Object.keys(previousProducts).filter(product => !productMap[product]);
-            if (removedProducts.length > 0) {
-                pendingEmployeeManualSavePayload = { memberName, productMap };
-                showModalDialogue(
-                    'Are you sure to delete this?',
-                    `This will remove ${removedProducts.map(escapeHTML).join(', ')} from Product Report and Employee Report count/time.`,
-                    '',
-                    `
-                    <button class="btn-alert btn-cancel-alert" onclick="pendingEmployeeManualSavePayload=null; dismissModalOverlay(); renderEmployeeUpdateReport();">No</button>
-                    <button class="btn-alert btn-confirm-save" onclick="confirmPendingEmployeeManualDeleteSave()">Yes</button>
-                    `
-                );
-                return;
+            if (removedProducts.length > 0 && !confirm(`Are you sure to delete this manual product entry: ${removedProducts.join(', ')}?`)) return;
+
+            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
+            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
+            if (finalCount > 0 || finalSeconds > 0) {
+                appConfigStore.employeeManualOverrides[overrideKey] = {
+                    count: finalCount,
+                    seconds: finalSeconds,
+                    time: secondsToDurationString(finalSeconds),
+                    products: productMap,
+                    savedAt: getCurrentTimestamp()
+                };
+            } else {
+                delete appConfigStore.employeeManualOverrides[overrideKey];
             }
 
-            applyEmployeeManualOverrideSave(memberName, productMap);
+            dismissModalOverlay();
+            saveDemoDataStateSnapshot();
+            renderEmployeeUpdateReport();
         }
 
         function buildManagerManualEditOptions(listValues, selectedValue, includeNone) {
@@ -4735,13 +4442,9 @@
         function resetEmployeeUpdateDateRangeToToday() {
             const startInput = document.getElementById('employeeStartDate');
             const endInput = document.getElementById('employeeEndDate');
-            const todayIso = toInputDateString(new Date());
-            if (startInput) startInput.value = todayIso;
-            if (endInput) endInput.value = todayIso;
-            employeeRangeTempStartDate = todayIso;
-            employeeRangeTempEndDate = todayIso;
-            employeeRangeWaitingForEnd = false;
-            syncEmployeeRangeDisplayFromHidden();
+            const today = new Date();
+            if (startInput) startInput.valueAsDate = today;
+            if (endInput) endInput.valueAsDate = today;
             renderEmployeeUpdateReport();
         }
 
@@ -5162,7 +4865,7 @@
         function getManagerScriptControlDataset(viewContext) {
             if (viewContext === 'active') return pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'pending');
             if (viewContext === 'ready') return pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'ready');
-            if (viewContext === 'archive') return pipelineDataStore.filter(i => !i.isDeleted && !i.archiveLogPurged && i.stage === 'completed' && (!i.isExpired || i.expiredFromContext === 'archive'));
+            if (viewContext === 'archive') return pipelineDataStore.filter(i => !i.isDeleted && !i.archiveLogPurged && i.stage === 'completed' && (!i.videoStage || i.videoStage === 'none') && (!i.isExpired || i.expiredFromContext === 'archive'));
             if (viewContext === 'pendingVideo') return pipelineDataStore.filter(i => !i.isDeleted && !i.isExpired && i.stage === 'completed' && i.videoStage === 'pending');
             if (viewContext === 'readyVideo') return pipelineDataStore.filter(i => !i.isDeleted && !i.videoLogPurged && i.stage === 'completed' && i.videoStage === 'ready' && (!i.isExpired || i.expiredFromContext === 'video'));
             return [];
@@ -5486,364 +5189,7 @@
         applyProfessionalSectionTheme('scripts');
 
 
-
-
-        /* FINAL SCRIPT CONTROL LEDGER + EMPLOYEE MANUAL DELETE FIX */
-        function getScriptControlContextLabel(contextKey) {
-            const map = { active: 'Active List', ready: 'Ready List', archive: 'Archive Logs', pendingVideo: 'Pending Video', readyVideo: 'Ready Video' };
-            return map[contextKey] || contextKey;
-        }
-
-        function normalizeScriptControlHistoryTimestamp(value) {
-            return String(value || '').trim();
-        }
-
-        function getInferredScriptControlTimestamps(item, contextKey) {
-            if (!item) return [];
-            const values = [];
-            if (contextKey === 'active') values.push(item.createdTimestamp);
-            if (contextKey === 'ready') values.push(item.readyTimestamp);
-            if (contextKey === 'archive') values.push(item.completedTimestamp);
-            if (contextKey === 'pendingVideo') values.push(item.editStartClockTime || item.completedTimestamp);
-            if (contextKey === 'readyVideo') values.push(item.videoCreatedTimestamp || item.editEndClockTime);
-            return values.map(normalizeScriptControlHistoryTimestamp).filter(Boolean);
-        }
-
-        function ensureScriptControlHistoryForItem(item) {
-            if (!item) return item;
-            if (!item.scriptControlHistory || typeof item.scriptControlHistory !== 'object') item.scriptControlHistory = {};
-            ['active','ready','archive','pendingVideo','readyVideo'].forEach(contextKey => {
-                if (!Array.isArray(item.scriptControlHistory[contextKey])) item.scriptControlHistory[contextKey] = [];
-                getInferredScriptControlTimestamps(item, contextKey).forEach(ts => {
-                    if (!item.scriptControlHistory[contextKey].includes(ts)) item.scriptControlHistory[contextKey].push(ts);
-                });
-            });
-            return item;
-        }
-
-        function seedScriptControlHistoryLedger() {
-            if (!Array.isArray(pipelineDataStore)) return;
-            pipelineDataStore.forEach(item => ensureScriptControlHistoryForItem(item));
-        }
-
-        function recordScriptControlLedgerEntry(item, contextKey, timestampValue) {
-            if (!item || !contextKey) return item;
-            ensureScriptControlHistoryForItem(item);
-            const timestamp = normalizeScriptControlHistoryTimestamp(timestampValue || getCurrentTimestamp());
-            if (timestamp && !item.scriptControlHistory[contextKey].includes(timestamp)) item.scriptControlHistory[contextKey].push(timestamp);
-            return item;
-        }
-
-        function getScriptControlHistoryEntries(item, contextKey) {
-            ensureScriptControlHistoryForItem(item);
-            return Array.from(new Set([...(item.scriptControlHistory && item.scriptControlHistory[contextKey] ? item.scriptControlHistory[contextKey] : []), ...getInferredScriptControlTimestamps(item, contextKey)]))
-                .map(normalizeScriptControlHistoryTimestamp)
-                .filter(Boolean);
-        }
-
-        function getScriptControlSelectedDateValue() {
-            const input = document.getElementById('managerScriptControlDate');
-            return input ? input.value : '';
-        }
-
-        function doesScriptControlItemMatchSelectedDate(item, contextKey) {
-            const selectedDate = getScriptControlSelectedDateValue();
-            if (!selectedDate) return true;
-            return getScriptControlHistoryEntries(item, contextKey).some(ts => isDateWithinEmployeeRange(ts, selectedDate, selectedDate));
-        }
-
-        function getScriptControlLatestTimestampForContext(item, contextKey) {
-            const selectedDate = getScriptControlSelectedDateValue();
-            let entries = getScriptControlHistoryEntries(item, contextKey);
-            if (selectedDate) entries = entries.filter(ts => isDateWithinEmployeeRange(ts, selectedDate, selectedDate));
-            return entries.sort((a,b) => getTimestampSortValue(b) - getTimestampSortValue(a))[0] || getScriptControlDateTimestampForContext(item, contextKey) || item.createdTimestamp || '';
-        }
-
-        function getManagerScriptControlDataset(viewContext) {
-            seedScriptControlHistoryLedger();
-            return pipelineDataStore.filter(item => {
-                if (!item || item.scriptControlPurged) return false;
-                return getScriptControlHistoryEntries(item, viewContext).length > 0;
-            });
-        }
-
-        function filterScriptControlDatasetBySelectedDate(dataset, viewContext) {
-            return (dataset || []).filter(item => doesScriptControlItemMatchSelectedDate(item, viewContext));
-        }
-
-        function updateManagerScriptControlTabCounts() {
-            const tabMap = [
-                ['subTabMscActive', 'active', '📝 Active List'],
-                ['subTabMscReady', 'ready', '✅ Ready List'],
-                ['subTabMscArchive', 'archive', '🗃️ Archive Logs'],
-                ['subTabMscPendingVideo', 'pendingVideo', '🎬 Pending Video'],
-                ['subTabMscReadyVideo', 'readyVideo', '📼 Ready Video (Today)']
-            ];
-            tabMap.forEach(([id, contextKey, label]) => {
-                const btn = document.getElementById(id);
-                if (!btn) return;
-                const count = filterScriptControlDatasetBySelectedDate(getManagerScriptControlDataset(contextKey), contextKey).length;
-                btn.innerHTML = `${label}<br><span class="script-control-tab-count">${count}</span>`;
-            });
-        }
-
-        function renderManagerScriptControlLists(viewContext) {
-            const grid = document.getElementById('managerGridContainer');
-            const titleEl = document.getElementById('managerListTitle');
-            if (!grid || !titleEl) return;
-            grid.innerHTML = '';
-            titleEl.innerText = getManagerScriptControlTitle(viewContext);
-            ensureManagerScriptControlDateDefault();
-            seedScriptControlHistoryLedger();
-            updateManagerScriptControlTabCounts();
-            const dataset = filterScriptControlDatasetBySelectedDate(getManagerScriptControlDataset(viewContext), viewContext)
-                .sort((a, b) => getTimestampSortValue(getScriptControlLatestTimestampForContext(b, viewContext)) - getTimestampSortValue(getScriptControlLatestTimestampForContext(a, viewContext)));
-            if (dataset.length === 0) {
-                grid.innerHTML = `<div class="empty-status-text">No records matched loop constraints metrics bounds inside this script control layer.</div>`;
-                return;
-            }
-            dataset.forEach(item => grid.appendChild(buildManagerScriptControlCard(item, viewContext)));
-        }
-
-        const __scriptLedgerOriginalSaveDemoDataStateSnapshot = saveDemoDataStateSnapshot;
-        saveDemoDataStateSnapshot = function() {
-            seedScriptControlHistoryLedger();
-            return __scriptLedgerOriginalSaveDemoDataStateSnapshot();
-        };
-
-        const __scriptLedgerOriginalSyncPipelineInfrastructure = syncPipelineInfrastructure;
-        syncPipelineInfrastructure = function() {
-            seedScriptControlHistoryLedger();
-            return __scriptLedgerOriginalSyncPipelineInfrastructure();
-        };
-
-        const __scriptLedgerOriginalApplyManagerStatusChange = applyManagerStatusChange;
-        applyManagerStatusChange = function(id, nextStatus) {
-            const contextMap = { 'active-list': 'active', 'ready-list': 'ready', 'archive-logs': 'archive', 'pending-video': 'pendingVideo', 'ready-video': 'readyVideo' };
-            pipelineDataStore = pipelineDataStore.map(item => {
-                if (item.id === id && contextMap[nextStatus]) recordScriptControlLedgerEntry(item, contextMap[nextStatus], getCurrentTimestamp());
-                return item;
-            });
-            return __scriptLedgerOriginalApplyManagerStatusChange(id, nextStatus);
-        };
-
-        function getEmployeeManualOverrideKey(memberName) {
-            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
-            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
-            return `${startDateValue}|${endDateValue}|all|${String(memberName || '').trim()}`;
-        }
-
-        function getEmployeeManualOverrideForCurrentFilters(memberName) {
-            const store = appConfigStore.employeeManualOverrides || {};
-            const mainKey = getEmployeeManualOverrideKey(memberName);
-            if (store[mainKey]) return store[mainKey];
-            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
-            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
-            const productValue = (document.getElementById('employeeProductFilter') || {}).value || 'all';
-            const legacyKey = `${startDateValue}|${endDateValue}|${productValue}|${String(memberName || '').trim()}`;
-            return store[legacyKey] || null;
-        }
-
-        function getManualAdjustedEmployeeDisplay(memberName, info) {
-            const manualOverride = getEmployeeManualOverrideForCurrentFilters(memberName);
-            const selectedProduct = (document.getElementById('employeeProductFilter') || {}).value || 'all';
-            const filterProducts = (products) => {
-                if (selectedProduct === 'all') return products;
-                const filtered = {};
-                Object.entries(products || {}).forEach(([product, pInfo]) => {
-                    if (String(product) === String(selectedProduct) || doesScriptMatchSelectedProduct({ title: product, assignedProduct: product, body: '' }, selectedProduct)) filtered[product] = pInfo;
-                });
-                return filtered;
-            };
-            const baseProducts = {};
-            const rawProducts = (info && info.products) ? info.products : {};
-            Object.keys(rawProducts).forEach(product => {
-                baseProducts[product] = { count: Number(rawProducts[product].count || 0), seconds: Number(rawProducts[product].seconds || 0) };
-            });
-            let finalProducts = baseProducts;
-            if (manualOverride) {
-                finalProducts = {};
-                Object.entries(manualOverride.products || {}).forEach(([product, productInfo]) => {
-                    const count = Number(productInfo.count || 0);
-                    const seconds = Number(productInfo.seconds || 0);
-                    if (count > 0 || seconds > 0) finalProducts[product] = { count, seconds };
-                });
-                const savedAtMs = getTimestampSortValue(manualOverride.savedAt);
-                if (savedAtMs && Array.isArray((info || {}).scripts)) {
-                    info.scripts.forEach(scriptItem => {
-                        const videoMs = getTimestampSortValue(scriptItem.videoCreatedTimestamp || scriptItem.editEndClockTime);
-                        if (videoMs && videoMs > savedAtMs) {
-                            const product = scriptItem.assignedProduct || 'None';
-                            finalProducts[product] = finalProducts[product] || { count: 0, seconds: 0 };
-                            finalProducts[product].count += 1;
-                            finalProducts[product].seconds += durationStringToSeconds(scriptItem.totalElapsedTimeFormatted);
-                        }
-                    });
-                }
-            }
-            finalProducts = filterProducts(finalProducts);
-            const count = Object.values(finalProducts).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
-            const seconds = Object.values(finalProducts).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
-            return { count, seconds, products: finalProducts };
-        }
-
-        function ensureManualEmployeeOverridesInCurrentSummary(memberSummary) {
-            const store = appConfigStore.employeeManualOverrides || {};
-            const startDateValue = (document.getElementById('employeeStartDate') || {}).value || '';
-            const endDateValue = (document.getElementById('employeeEndDate') || {}).value || startDateValue;
-            const productValue = (document.getElementById('employeeProductFilter') || {}).value || 'all';
-            const memberValue = (document.getElementById('employeeMemberFilter') || {}).value || 'all';
-            Object.keys(store).forEach(key => {
-                const parts = key.split('|');
-                if (parts.length < 4) return;
-                const [keyStart, keyEnd, keyProduct, ...memberParts] = parts;
-                const memberName = memberParts.join('|');
-                if (keyStart !== startDateValue || keyEnd !== endDateValue) return;
-                if (memberValue !== 'all' && memberName !== memberValue) return;
-                const override = store[key] || {};
-                if (productValue !== 'all' && !(override.products || {})[productValue] && keyProduct !== productValue) return;
-                if (!memberSummary[memberName]) memberSummary[memberName] = { count: 0, seconds: 0, products: {}, scripts: [] };
-            });
-        }
-
-        function applyEmployeeManualOverrideSave(memberName, productMap) {
-            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
-            const overrideKey = getEmployeeManualOverrideKey(memberName);
-            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
-            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
-            appConfigStore.employeeManualOverrides[overrideKey] = {
-                count: finalCount,
-                seconds: finalSeconds,
-                time: secondsToDurationString(finalSeconds),
-                products: productMap,
-                savedAt: getCurrentTimestamp()
-            };
-            pendingEmployeeManualSavePayload = null;
-            dismissModalOverlay();
-            saveDemoDataStateSnapshot();
-            renderEmployeeUpdateReport();
-        }
-
-        function saveEmployeeManualEdit(memberName) {
-            let productMap = {};
-            try { productMap = collectManualEmployeeProductMap(); }
-            catch (error) { alert('Please enter product time in HH:MM:SS format.'); return; }
-            const override = getEmployeeManualOverrideForCurrentFilters(memberName);
-            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
-            const previousProducts = {};
-            if (override && override.products) {
-                Object.assign(previousProducts, override.products);
-            } else {
-                memberDataset.forEach(item => {
-                    const product = item.assignedProduct || 'None';
-                    previousProducts[product] = previousProducts[product] || { count: 0, seconds: 0 };
-                    previousProducts[product].count += 1;
-                    previousProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
-                });
-            }
-            const removedProducts = Object.keys(previousProducts).filter(product => !productMap[product]);
-            if (removedProducts.length > 0) {
-                pendingEmployeeManualSavePayload = { memberName, productMap };
-                showModalDialogue(
-                    'Are you sure to delete this?',
-                    `This will remove ${removedProducts.map(escapeHTML).join(', ')} from Product Report and Employee Report count/time.`,
-                    '',
-                    `<button class="btn-alert btn-cancel-alert" onclick="pendingEmployeeManualSavePayload=null; dismissModalOverlay(); renderEmployeeUpdateReport();">No</button>
-                     <button class="btn-alert btn-confirm-save" onclick="confirmPendingEmployeeManualDeleteSave()">Yes</button>`
-                );
-                return;
-            }
-            applyEmployeeManualOverrideSave(memberName, productMap);
-        }
-
-        // --- FINAL LOCAL STORAGE MANUAL DELETE FIX ---
-        function addManualEmployeeProductRow(selectedProduct = '', countValue = 0, secondsValue = 0) {
-            const host = document.getElementById('manualEmpProductRows');
-            if (!host) return;
-            const row = document.createElement('div');
-            row.className = 'manualEmpProductRow';
-            row.style.cssText = 'display:grid; grid-template-columns: 1.4fr .7fr 1fr auto; gap:8px; margin-bottom:8px; align-items:center;';
-            row.innerHTML = `
-                <select class="input-control manualEmpProductSelect">${buildManualProductDropdownOptions(selectedProduct)}</select>
-                <input type="number" min="0" class="input-control manualEmpProductCount" value="${escapeAttr(String(countValue || 0))}" placeholder="Qty">
-                <input class="input-control manualEmpProductTime" value="${escapeAttr(secondsToDurationString(secondsValue || 0))}" placeholder="00:00:00">
-                <button type="button" class="btn-pro btn-delete" title="Delete" onclick="this.closest('.manualEmpProductRow').remove()">🗑️</button>
-            `;
-            host.appendChild(row);
-        }
-
-        function collectManualEmployeeProductMap() {
-            const productMap = {};
-            const rows = Array.from(document.querySelectorAll('.manualEmpProductRow'));
-            for (const row of rows) {
-                const product = ((row.querySelector('.manualEmpProductSelect') || {}).value || '').trim();
-                const count = Math.max(0, Number((row.querySelector('.manualEmpProductCount') || {}).value || 0));
-                const timeText = (((row.querySelector('.manualEmpProductTime') || {}).value || '00:00:00').trim() || '00:00:00');
-                if (!product) continue;
-                if (!/^\d{1,3}:\d{2}:\d{2}$/.test(timeText)) throw new Error('INVALID_PRODUCT_TIME');
-                const seconds = durationStringToSeconds(timeText);
-                if (count > 0 || seconds > 0) {
-                    if (!productMap[product]) productMap[product] = { count: 0, seconds: 0, time: '00:00:00' };
-                    productMap[product].count += count;
-                    productMap[product].seconds += seconds;
-                    productMap[product].time = secondsToDurationString(productMap[product].seconds);
-                }
-            }
-            return productMap;
-        }
-
-        function saveEmployeeManualEdit(memberName) {
-            let productMap = {};
-            try { productMap = collectManualEmployeeProductMap(); }
-            catch (error) { alert('Please enter product time in HH:MM:SS format.'); return; }
-
-            const override = getEmployeeManualOverrideForCurrentFilters(memberName);
-            const memberDataset = getEmployeeUpdateFilteredVideos().filter(item => (item.assignedMember || 'None') === memberName);
-            const previousProducts = {};
-            if (override && override.products) {
-                Object.assign(previousProducts, override.products);
-            } else {
-                memberDataset.forEach(item => {
-                    const product = item.assignedProduct || 'None';
-                    previousProducts[product] = previousProducts[product] || { count: 0, seconds: 0 };
-                    previousProducts[product].count += 1;
-                    previousProducts[product].seconds += durationStringToSeconds(item.totalElapsedTimeFormatted);
-                });
-            }
-            const removedProducts = Object.keys(previousProducts).filter(product => !productMap[product] && (Number((previousProducts[product] || {}).count || 0) > 0 || Number((previousProducts[product] || {}).seconds || 0) > 0));
-            if (removedProducts.length > 0) {
-                pendingEmployeeManualSavePayload = { memberName, productMap };
-                showModalDialogue(
-                    'Are you sure to delete this?',
-                    `This will remove ${removedProducts.map(escapeHTML).join(', ')} from Product Report and Employee Report count/time.`,
-                    '',
-                    `<button class="btn-alert btn-cancel-alert" onclick="pendingEmployeeManualSavePayload=null; dismissModalOverlay(); renderEmployeeUpdateReport();">No</button>
-                     <button class="btn-alert btn-confirm-save" onclick="confirmPendingEmployeeManualDeleteSave()">Yes</button>`
-                );
-                return;
-            }
-            applyEmployeeManualOverrideSave(memberName, productMap);
-        }
-
-        function applyEmployeeManualOverrideSave(memberName, productMap) {
-            appConfigStore.employeeManualOverrides = appConfigStore.employeeManualOverrides || {};
-            const overrideKey = getEmployeeManualOverrideKey(memberName);
-            const finalCount = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.count || 0), 0);
-            const finalSeconds = Object.values(productMap).reduce((sum, pInfo) => sum + Number(pInfo.seconds || 0), 0);
-            appConfigStore.employeeManualOverrides[overrideKey] = {
-                count: finalCount,
-                seconds: finalSeconds,
-                time: secondsToDurationString(finalSeconds),
-                products: productMap,
-                savedAt: getCurrentTimestamp()
-            };
-            pendingEmployeeManualSavePayload = null;
-            dismissModalOverlay();
-            saveDemoDataStateSnapshot();
-            setTimeout(renderEmployeeUpdateReport, 60);
-        }
-
-        // Run Local Storage Test Mode Setup Configurations
+        // Run Firebase Live Instance Setup Configurations
         startRealtimeFirebaseSync();
         setTimeout(triggerActiveScreenAnimation, 60);
     
